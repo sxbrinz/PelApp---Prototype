@@ -1,0 +1,3777 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PelApp — O jogo não espera | Ouro Preto, MG</title>
+  <meta name="description" content="Comunidade esportiva, organização de partidas, rachas e reserva de quadras em Ouro Preto, MG e região." />
+  <meta name="theme-color" content="#080C0E" />
+
+  <!-- Google Fonts: Oswald (Esportivo Condensado) & Inter (Corpo) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN (Compatível com GitHub Pages sem build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Oswald', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#07090b',
+            appbg: '#080C0E',
+            headerbg: '#0B0F12',
+            surface: '#12181F',
+            surface2: '#18222C',
+            brand: {
+              DEFAULT: '#16A34A',
+              light: '#22C55E',
+              dark: '#15803D',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Leaflet CSS & JS (Mapa Interativo sem necessidade de chave API) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #07090b;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+      overscroll-behavior-y: none;
+    }
+
+    .font-sport {
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Hide scrollbars cleanly on horizontal carousels */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Custom subtle scrollbar for desktop */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080C0E;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E293B;
+      border-radius: 9999px;
+    }
+
+    /* Range slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #18222C;
+      height: 8px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #16A34A;
+      border: 3px solid #080C0E;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(22, 163, 74, 0.6);
+    }
+
+    /* Leaflet dark map tuning */
+    .leaflet-container {
+      background: #0B0F12 !important;
+      font-family: 'Inter', sans-serif !important;
+      z-index: 1;
+    }
+    .leaflet-tile-pane {
+      filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(75%);
+    }
+    .leaflet-control-attribution {
+      display: none !important;
+    }
+    .pelapp-pin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      font-size: 16px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65);
+      border: 2.5px solid #ffffff;
+      transition: transform 0.15s ease;
+    }
+    .pelapp-pin:hover {
+      transform: scale(1.15);
+    }
+    .user-pulse-pin {
+      width: 18px;
+      height: 18px;
+      background: #3B82F6;
+      border: 3px solid #ffffff;
+      border-radius: 9999px;
+      box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Animations */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-view {
+      animation: fadeSlideUp 0.22s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-[#07090b] text-slate-100 antialiased selection:bg-[#16A34A] selection:text-white">
+
+  <!-- Container Principal Responsivo (Mobile & Notebook/Desktop) -->
+  <div id="app-shell" class="relative mx-auto min-h-screen w-full max-w-6xl bg-[#080C0E] lg:border-x lg:border-white/5 shadow-2xl flex flex-col overflow-x-hidden">
+    
+    <!-- Header Superior Fixo -->
+    <header id="app-header" class="sticky top-0 z-40 h-16 bg-[#0B0F12]/90 backdrop-blur-md border-b border-white/10 px-4 md:px-8 flex items-center justify-between gap-3">
+      <!-- Renderizado dinamicamente via JS -->
+    </header>
+
+    <!-- Conteúdo Dinâmico das Telas -->
+    <main id="app-main" class="flex-1 pb-24 md:pb-10">
+      <!-- Views renderizadas aqui -->
+    </main>
+
+    <!-- Barra de Navegação Inferior Fixa -->
+    <nav id="app-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 w-full z-40 bg-[#0B0F12]/95 backdrop-blur-lg border-t border-white/10 px-2 py-1.5 flex items-center justify-around">
+      <!-- Itens renderizados via JS -->
+    </nav>
+
+    <!-- Container Global de Modais / Drawers -->
+    <div id="modal-root"></div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-none flex flex-col gap-2"></div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * PELAPP — APLICAÇÃO WEB MOBILE-FIRST (HTML5 / CSS3 / VANILLA JS)
+     * Localidade Base: Ouro Preto, MG e Região
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. CONSTANTES, CATÁLOGO DE ESPORTES E CIDADES DE MG
+    // ----------------------------------------------------------------------------
+    const STORAGE_KEY = 'pelapp_v1_state';
+
+    const SPORTS_CATALOG = [
+      { id: 'society', name: 'Futebol Society', icon: '⚽', defaultPlayers: 14, color: '#16A34A', image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=900&q=80' },
+      { id: 'futsal', name: 'Futsal', icon: '👟', defaultPlayers: 10, color: '#22C55E', image: 'https://images.unsplash.com/photo-1518604666860-9ed391f76460?auto=format&fit=crop&w=900&q=80' },
+      { id: 'volei', name: 'Vôlei', icon: '🏐', defaultPlayers: 12, color: '#F59E0B', image: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=900&q=80' },
+      { id: 'beach_tennis', name: 'Beach Tennis', icon: '🎾', defaultPlayers: 4, color: '#F97316', image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=900&q=80' },
+      { id: 'basquete', name: 'Basquete', icon: '🏀', defaultPlayers: 10, color: '#EA580C', image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=900&q=80' },
+      { id: 'peteca', name: 'Peteca', icon: '🏸', defaultPlayers: 4, color: '#EAB308', image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=900&q=80' },
+      { id: 'handebol', name: 'Handebol', icon: '🤾', defaultPlayers: 14, color: '#3B82F6', image: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=900&q=80' },
+      { id: 'tenis', name: 'Tênis', icon: '🎾', defaultPlayers: 2, color: '#10B981', image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=900&q=80' },
+      { id: 'corrida', name: 'Corrida', icon: '🏃', defaultPlayers: 10, color: '#8B5CF6', image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=900&q=80' },
+    ];
+
+    const MG_CITIES = [
+      { name: 'Ouro Preto, MG', lat: -20.3856, lng: -43.5035 },
+      { name: 'Mariana, MG', lat: -20.3778, lng: -43.4161 },
+      { name: 'Itabirito, MG', lat: -20.2547, lng: -43.8014 },
+      { name: 'Cachoeira do Campo, MG', lat: -20.3472, lng: -43.6719 },
+      { name: 'Belo Horizonte, MG', lat: -19.9167, lng: -43.9345 },
+    ];
+
+    const AVATAR_PRESETS = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
+    ];
+
+    const WEEK_DAYS = [
+      { key: 'seg', label: 'Seg' },
+      { key: 'ter', label: 'Ter' },
+      { key: 'qua', label: 'Qua' },
+      { key: 'qui', label: 'Qui' },
+      { key: 'sex', label: 'Sex' },
+      { key: 'sab', label: 'Sáb' },
+      { key: 'dom', label: 'Dom' },
+    ];
+
+    // Helper para datas relativas realistas a partir de hoje
+    function getRelativeDateISO(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDateBR(isoDate) {
+      if (!isoDate) return '';
+      const today = getRelativeDateISO(0);
+      const tomorrow = getRelativeDateISO(1);
+      if (isoDate === today) return 'Hoje';
+      if (isoDate === tomorrow) return 'Amanhã';
+      const [y, m, d] = isoDate.split('-');
+      return `${d}/${m}`;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 2. DADOS INICIAIS RICOS (OURO PRETO, MG)
+    // ----------------------------------------------------------------------------
+    function getInitialSeedData() {
+      const users = [
+        {
+          id: 'u_dudu',
+          username: 'dudu',
+          password: '1234',
+          name: 'Eduardo Caldas',
+          email: 'dudu.caldas@pelapp.com.br',
+          city: 'Ouro Preto, MG',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+          favoriteSports: ['society', 'futsal', 'beach_tennis'],
+          paymentMethod: { type: 'PIX', label: 'Chave CPF •••.482.910-••', verified: true },
+          isCourtOwner: false,
+        },
+        {
+          id: 'u_sabrina',
+          username: 'sabrina',
+          password: '1234',
+          name: 'Sabrina Teixeira',
+          email: 'sabrina.t@pelapp.com.br',
+          city: 'Ouro Preto, MG',
+          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+          favoriteSports: ['volei', 'beach_tennis', 'corrida'],
+          paymentMethod: { type: 'PIX', label: 'sabrina.t@pelapp.com.br', verified: true },
+          isCourtOwner: false,
+        },
+        {
+          id: 'u_raquel',
+          username: 'raquel',
+          password: '1234',
+          name: 'Raquel Marcio',
+          email: 'raquel.arena@pelapp.com.br',
+          city: 'Ouro Preto, MG',
+          avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
+          favoriteSports: ['beach_tennis', 'volei', 'tenis'],
+          paymentMethod: { type: 'PIX', label: 'CNPJ Arena ••.104/0001-88', verified: true },
+          isCourtOwner: true,
+        },
+        // Jogadores adicionais da comunidade para popular partidas
+        { id: 'u_lucas', username: 'lucas_op', password: '1234', name: 'Lucas Ferreira', email: 'lucas@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[3], favoriteSports: ['society', 'basquete'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_mari', username: 'mari_ufop', password: '1234', name: 'Mariana Souza', email: 'mari@ufop.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[0], favoriteSports: ['volei', 'handebol'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_thiago', username: 'thiago_bauxita', password: '1234', name: 'Thiago Alves', email: 'thiago@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[4], favoriteSports: ['basquete', 'futsal'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_camila', username: 'camila_bt', password: '1234', name: 'Camila Rocha', email: 'camila@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[5], favoriteSports: ['beach_tennis', 'tenis'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_pedro', username: 'pedro_rep', password: '1234', name: 'Pedro Henrique', email: 'pedro@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[1], favoriteSports: ['futsal', 'society'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_rafa', username: 'rafa_goleiro', password: '1234', name: 'Rafael Mendes', email: 'rafa@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[3], favoriteSports: ['society', 'futsal'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_julia', username: 'julia_volei', password: '1234', name: 'Júlia Lima', email: 'julia@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[2], favoriteSports: ['volei'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_gabriel', username: 'gabriel_9', password: '1234', name: 'Gabriel Costa', email: 'gabriel@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[4], favoriteSports: ['society', 'basquete'], paymentMethod: null, isCourtOwner: false },
+        { id: 'u_bruno', username: 'bruno_op', password: '1234', name: 'Bruno Silva', email: 'bruno@op.br', city: 'Ouro Preto, MG', avatar: AVATAR_PRESETS[1], favoriteSports: ['basquete'], paymentMethod: null, isCourtOwner: false },
+      ];
+
+      const buildDefaultSchedule = (price, busySlots = {}) => {
+        const baseTimes = ['08:00 - 09:30', '10:00 - 11:30', '16:00 - 17:30', '17:30 - 19:00', '19:00 - 20:30', '20:30 - 22:00'];
+        const schedule = {};
+        WEEK_DAYS.forEach(d => {
+          schedule[d.key] = baseTimes.map((time, idx) => ({
+            id: `${d.key}_${idx}`,
+            time,
+            price,
+            status: (busySlots[d.key] && busySlots[d.key].includes(time)) ? 'occupied' : 'available',
+            reservedBy: (busySlots[d.key] && busySlots[d.key].includes(time)) ? 'Reserva Local' : null,
+          }));
+        });
+        return schedule;
+      };
+
+      const courts = [
+        {
+          id: 'c_operario',
+          ownerId: 'u_raquel',
+          name: 'Arena Operário Esporte Clube',
+          neighborhood: 'Barra',
+          address: 'Rua Santa Rita, 240 — Barra, Ouro Preto, MG',
+          lat: -20.3912,
+          lng: -43.5018,
+          surface: 'Grama Sintética FIFA',
+          pricePerHour: 120,
+          whatsapp: '5531999990101',
+          sports: ['society', 'futsal'],
+          amenities: ['Vestiário', 'Estacionamento', 'Bar & Churrasqueira', 'Iluminação LED'],
+          image: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80',
+          schedule: buildDefaultSchedule(120, {
+            seg: ['19:00 - 20:30'],
+            qua: ['19:00 - 20:30', '20:30 - 22:00'],
+            sab: ['10:00 - 11:30', '16:00 - 17:30'],
+          }),
+        },
+        {
+          id: 'c_itacolomi',
+          ownerId: 'u_raquel',
+          name: 'Arena Itacolomi Beach Sports',
+          neighborhood: 'Bauxita',
+          address: 'Av. Juscelino Kubitschek, 890 — Bauxita, Ouro Preto, MG',
+          lat: -20.3965,
+          lng: -43.5112,
+          surface: 'Areia Especial Tratada',
+          pricePerHour: 90,
+          whatsapp: '5531999990202',
+          sports: ['beach_tennis', 'volei', 'peteca'],
+          amenities: ['Areia Fina', 'Duchas', 'Aluguel de Raquetes', 'Açaí & Drinks'],
+          image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=900&q=80',
+          schedule: buildDefaultSchedule(90, {
+            ter: ['17:30 - 19:00'],
+            qui: ['17:30 - 19:00', '19:00 - 20:30'],
+            dom: ['08:00 - 09:30', '10:00 - 11:30'],
+          }),
+        },
+        {
+          id: 'c_vilarica',
+          ownerId: 'u_raquel',
+          name: 'Complexo Esportivo Vila Rica',
+          neighborhood: 'Centro',
+          address: 'Rua Padre Rolim, 415 — Centro, Ouro Preto, MG',
+          lat: -20.3834,
+          lng: -43.5059,
+          surface: 'Parquet Poliesportivo Oficial',
+          pricePerHour: 110,
+          whatsapp: '5531999990303',
+          sports: ['futsal', 'basquete', 'handebol', 'volei'],
+          amenities: ['Arquibancada', 'Placar Eletrônico', 'Vestiário Quente', 'Beberouro'],
+          image: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?auto=format&fit=crop&w=900&q=80',
+          schedule: buildDefaultSchedule(110, {
+            seg: ['20:30 - 22:00'],
+            sex: ['19:00 - 20:30', '20:30 - 22:00'],
+          }),
+        },
+      ];
+
+      const matches = [
+        {
+          id: 'm_1',
+          sportId: 'society',
+          title: 'Futebol Society de Sábado — Arena Operário',
+          description: 'Racha tradicional de sábado na Barra! Times equilibrados na hora por sorteio, 2 tempos de 35 minutos. Chegar 15 min antes para aquecimento.',
+          level: 'Todos os níveis',
+          maxPlayers: 14,
+          date: getRelativeDateISO(0),
+          time: '16:30',
+          duration: 90,
+          courtId: 'c_operario',
+          locationName: 'Arena Operário Esporte Clube',
+          address: 'Rua Santa Rita, 240 — Barra, Ouro Preto, MG',
+          lat: -20.3912,
+          lng: -43.5018,
+          isPaid: true,
+          price: 15,
+          paymentType: 'on_site', // 'advance_pix' | 'on_site'
+          approvalRequired: false,
+          waitlistEnabled: true,
+          reminder24h: true,
+          rules: 'Proibido trava de alumínio. Levar camisa clara e escura.',
+          organizerId: 'u_dudu',
+          participants: ['u_dudu', 'u_lucas', 'u_thiago', 'u_pedro', 'u_rafa', 'u_gabriel', 'u_bruno', 'u_sabrina', 'u_mari', 'u_camila', 'u_julia'],
+          waitlist: [],
+          pendingRequests: [],
+          paidUsers: [],
+          status: 'active',
+        },
+        {
+          id: 'm_2',
+          sportId: 'volei',
+          title: 'Vôlei Misto Noturno — Ginásio UFOP',
+          description: 'Vôlei misto animado no campus Morro do Cruzeiro / Bauxita. Bom nível de passe e ataque, clima super receptivo.',
+          level: 'Intermediário',
+          maxPlayers: 12,
+          date: getRelativeDateISO(0),
+          time: '19:30',
+          duration: 120,
+          courtId: null,
+          locationName: 'Ginásio Poliesportivo UFOP Bauxita',
+          address: 'Campus Morro do Cruzeiro — Bauxita, Ouro Preto, MG',
+          lat: -20.3988,
+          lng: -43.5135,
+          isPaid: false,
+          price: 0,
+          paymentType: 'on_site',
+          approvalRequired: false,
+          waitlistEnabled: true,
+          reminder24h: true,
+          rules: 'Rodízio obrigatório em quadra. Trazer garrafinha de água.',
+          organizerId: 'u_sabrina',
+          participants: ['u_sabrina', 'u_mari', 'u_julia', 'u_camila', 'u_dudu', 'u_lucas', 'u_thiago', 'u_pedro', 'u_gabriel', 'u_raquel'],
+          waitlist: [],
+          pendingRequests: [],
+          paidUsers: [],
+          status: 'active',
+        },
+        {
+          id: 'm_3',
+          sportId: 'beach_tennis',
+          title: 'Beach Tennis Sunset — Arena Itacolomi',
+          description: 'Duplas mistas e masculinas no pôr do sol com vista para o Pico do Itacolomi. Bolas novas inclusas na cota da quadra.',
+          level: 'Intermediário',
+          maxPlayers: 4,
+          date: getRelativeDateISO(1),
+          time: '17:30',
+          duration: 90,
+          courtId: 'c_itacolomi',
+          locationName: 'Arena Itacolomi Beach Sports',
+          address: 'Av. Juscelino Kubitschek, 890 — Bauxita, Ouro Preto, MG',
+          lat: -20.3965,
+          lng: -43.5112,
+          isPaid: true,
+          price: 25,
+          paymentType: 'advance_pix',
+          approvalRequired: false,
+          waitlistEnabled: true,
+          reminder24h: true,
+          rules: 'Pagamento antecipado via PIX garante a vaga na quadra 1.',
+          organizerId: 'u_raquel',
+          participants: ['u_raquel', 'u_camila', 'u_sabrina'],
+          waitlist: [],
+          pendingRequests: [],
+          paidUsers: ['u_raquel', 'u_camila', 'u_sabrina'],
+          status: 'active',
+        },
+        {
+          id: 'm_4',
+          sportId: 'basquete',
+          title: 'Basquete 5x5 — Quadra Praça Tiradentes / Centro',
+          description: 'Pega 5x5 pegado no coração histórico de Ouro Preto. Quem ganha fica até 2 vitórias seguidas (12 pontos).',
+          level: 'Avançado',
+          maxPlayers: 10,
+          date: getRelativeDateISO(1),
+          time: '18:30',
+          duration: 90,
+          courtId: 'c_vilarica',
+          locationName: 'Complexo Esportivo Vila Rica (Centro)',
+          address: 'Rua Padre Rolim, 415 — Centro, Ouro Preto, MG',
+          lat: -20.3834,
+          lng: -43.5059,
+          isPaid: false,
+          price: 0,
+          paymentType: 'on_site',
+          approvalRequired: false,
+          waitlistEnabled: true,
+          reminder24h: true,
+          rules: 'Fair play total, sem falta violenta. Suplentes entram na ordem da fila.',
+          organizerId: 'u_thiago',
+          participants: ['u_thiago', 'u_lucas', 'u_bruno', 'u_gabriel', 'u_pedro', 'u_rafa', 'u_dudu', 'u_mari', 'u_julia', 'u_camila'],
+          waitlist: ['u_sabrina'],
+          pendingRequests: [],
+          paidUsers: [],
+          status: 'active',
+        },
+        {
+          id: 'm_5',
+          sportId: 'futsal',
+          title: 'Futsal Universitário — Repúblicas OP',
+          description: 'Clássico futsal das repúblicas em Saramenha. Ritmo intenso, 4 na linha + goleiro, revezamento a cada 7 minutos.',
+          level: 'Todos os níveis',
+          maxPlayers: 10,
+          date: getRelativeDateISO(2),
+          time: '20:00',
+          duration: 90,
+          courtId: null,
+          locationName: 'Quadra Poliesportiva Saramenha',
+          address: 'Rua José Moringa, 120 — Saramenha, Ouro Preto, MG',
+          lat: -20.4021,
+          lng: -43.5190,
+          isPaid: true,
+          price: 10,
+          paymentType: 'on_site',
+          approvalRequired: false,
+          waitlistEnabled: true,
+          reminder24h: true,
+          rules: 'Tênis de futsal sem cravos. Acerto direto com o organizador.',
+          organizerId: 'u_pedro',
+          participants: ['u_pedro', 'u_lucas', 'u_rafa', 'u_gabriel', 'u_bruno', 'u_thiago', 'u_mari'],
+          waitlist: [],
+          pendingRequests: [],
+          paidUsers: [],
+          status: 'active',
+        },
+        {
+          id: 'm_past_1',
+          sportId: 'society',
+          title: 'Racha Clássico de Quarta — Barra',
+          description: 'Partida encerrada com placar de 8x7.',
+          level: 'Todos os níveis',
+          maxPlayers: 14,
+          date: getRelativeDateISO(-4),
+          time: '19:30',
+          duration: 90,
+          courtId: 'c_operario',
+          locationName: 'Arena Operário Esporte Clube',
+          address: 'Rua Santa Rita, 240 — Barra, Ouro Preto, MG',
+          lat: -20.3912,
+          lng: -43.5018,
+          isPaid: true,
+          price: 15,
+          paymentType: 'on_site',
+          approvalRequired: false,
+          waitlistEnabled: false,
+          reminder24h: false,
+          rules: 'Respeito em primeiro lugar.',
+          organizerId: 'u_dudu',
+          participants: ['u_dudu', 'u_lucas', 'u_thiago', 'u_pedro', 'u_rafa', 'u_gabriel', 'u_bruno', 'u_sabrina', 'u_mari', 'u_camila', 'u_julia', 'u_raquel'],
+          waitlist: [],
+          pendingRequests: [],
+          paidUsers: [],
+          status: 'finished',
+        }
+      ];
+
+      const messages = {
+        m_1: [
+          { id: 'msg_1', userId: 'u_dudu', text: 'Fala galera! Quadra confirmada na Arena Operário. Levem colete ou camisa branca e preta!', time: '10:15' },
+          { id: 'msg_2', userId: 'u_rafa', text: 'Fechado Dudu! Chego 16:15 pra aquecer no gol.', time: '10:22' },
+          { id: 'msg_3', userId: 'u_lucas', text: 'Alguém saindo do Centro / Praça Tiradentes de carona?', time: '11:05' },
+          { id: 'msg_4', userId: 'u_thiago', text: 'Eu passo aí às 16:05 Lucas, te mando msg!', time: '11:12' },
+        ],
+        m_2: [
+          { id: 'msg_5', userId: 'u_sabrina', text: 'Pessoal, rede já vai estar montada às 19:20 no ginásio da UFOP!', time: '14:00' },
+          { id: 'msg_6', userId: 'u_mari', text: 'Bora! Vou levar a bola oficial Mikasa.', time: '14:18' },
+        ],
+        m_3: [
+          { id: 'msg_7', userId: 'u_raquel', text: 'Falta só 1 vaga para fechar a dupla do sunset de amanhã! 🎾🌅', time: '15:30' },
+        ],
+        m_4: [
+          { id: 'msg_8', userId: 'u_thiago', text: 'Lotamos os 10! Quem estiver na lista de suplentes fica ligado caso alguém desista.', time: '12:45' },
+        ],
+        m_5: [
+          { id: 'msg_9', userId: 'u_pedro', text: 'Racha confirmado em Saramenha! Ainda temos 3 vagas.', time: '09:40' },
+        ],
+      };
+
+      const notifications = [
+        {
+          id: 'n_1',
+          userId: 'u_dudu',
+          title: 'Quórum quase completo! ⚽',
+          body: 'Faltam apenas 3 jogadores para lotar "Futebol Society de Sábado — Arena Operário".',
+          matchId: 'm_1',
+          time: 'Há 18 min',
+          read: false,
+        },
+        {
+          id: 'n_2',
+          userId: 'u_dudu',
+          title: 'Lembrete de Partida',
+          body: 'Seu jogo "Futebol Society de Sábado" começa hoje às 16:30 na Barra.',
+          matchId: 'm_1',
+          time: 'Há 2 horas',
+          read: false,
+        },
+        {
+          id: 'n_3',
+          userId: 'u_sabrina',
+          title: 'Você está na Lista de Suplentes #1',
+          body: 'Em "Basquete 5x5 — Quadra Praça Tiradentes". Você será promovida automaticamente se surgir vaga!',
+          matchId: 'm_4',
+          time: 'Há 1 hora',
+          read: false,
+        },
+      ];
+
+      return {
+        users,
+        courts,
+        matches,
+        messages,
+        notifications,
+        receipts: [],
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. ESTADO GLOBAL E PERSISTÊNCIA EM LOCALSTORAGE
+    // ----------------------------------------------------------------------------
+    let db = loadDatabase();
+
+    function loadDatabase() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.matches)) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao ler localStorage, restaurando dados iniciais:', e);
+      }
+      const seed = getInitialSeedData();
+      saveDatabase(seed);
+      return seed;
+    }
+
+    function saveDatabase(target = db) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(target));
+      } catch (e) {
+        console.warn('Erro ao salvar no localStorage:', e);
+      }
+    }
+
+    // Estado da Interface / Sessão
+    const appState = {
+      currentUser: null, // null = visitante (se guestMode = true) ou tela de login
+      guestMode: false,
+      activeTab: 'home', // 'home' | 'explore' | 'create' | 'my_matches' | 'profile'
+      subView: null, // null | 'match_detail' | 'match_chat' | 'court_owner'
+      selectedMatchId: null,
+      selectedCourtId: null,
+      userLocation: {
+        city: 'Ouro Preto, MG',
+        lat: -20.3856,
+        lng: -43.5035,
+        gpsActive: false,
+      },
+      // Filtros Home
+      homeSportFilter: 'all',
+      // Filtros & Estado Explorar
+      exploreTab: 'matches', // 'matches' | 'courts'
+      exploreDisplayMode: 'list', // 'list' | 'map'
+      exploreSearch: '',
+      exploreFilters: {
+        sport: 'all',
+        maxDistance: 999, // km
+        dateFilter: 'all', // 'all' | 'today' | 'tomorrow' | 'week'
+        level: 'all',
+        onlyAvailable: false,
+        priceFilter: 'all', // 'all' | 'free' | 'paid'
+        surface: 'all',
+        shift: 'all', // 'all' | 'morning' | 'afternoon' | 'night'
+      },
+      courtSelectedDay: {}, // { [courtId]: 'seg' }
+      // Wizard Criar Partida
+      createStep: 1,
+      createDirty: false,
+      createForm: getDefaultCreateForm(),
+      // Meus Jogos
+      myMatchesTab: 'upcoming', // 'upcoming' | 'organized' | 'history'
+      // Owner View
+      ownerSelectedCourtId: null,
+      ownerSelectedDay: 'seg',
+    };
+
+    function getDefaultCreateForm() {
+      return {
+        sportId: 'society',
+        title: '',
+        description: '',
+        level: 'Todos os níveis',
+        maxPlayers: 14,
+        date: getRelativeDateISO(1),
+        time: '19:00',
+        duration: 90,
+        courtId: 'c_operario',
+        locationName: 'Arena Operário Esporte Clube',
+        address: 'Rua Santa Rita, 240 — Barra, Ouro Preto, MG',
+        lat: -20.3912,
+        lng: -43.5018,
+        manualLocation: false,
+        isPaid: true,
+        price: 15,
+        paymentType: 'on_site',
+        approvalRequired: false,
+        waitlistEnabled: true,
+        reminder24h: true,
+        rules: 'Chegar 15 minutos antes. Respeito e fair play em quadra.',
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. UTILITÁRIOS (GEO / HAVERSINE, TOAST, CONFETTI, HELPERS)
+    // ----------------------------------------------------------------------------
+    function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function formatDistance(lat, lng) {
+      const km = calculateHaversineKm(
+        appState.userLocation.lat,
+        appState.userLocation.lng,
+        lat,
+        lng
+      );
+      if (km < 1) {
+        return `${Math.max(150, Math.round(km * 1000))} m`;
+      }
+      return `${km.toFixed(1).replace('.', ',')} km`;
+    }
+
+    function getSportById(id) {
+      return SPORTS_CATALOG.find(s => s.id === id) || SPORTS_CATALOG[0];
+    }
+
+    function getUserById(id) {
+      return db.users.find(u => u.id === id) || {
+        id,
+        name: 'Jogador PelApp',
+        username: 'atleta',
+        avatar: AVATAR_PRESETS[0],
+        city: 'Ouro Preto, MG',
+      };
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-[#12181F] border-[#16A34A] text-white',
+        error: 'bg-[#1F1215] border-red-500 text-red-100',
+        info: 'bg-[#12181F] border-sky-500 text-sky-100',
+        warning: 'bg-[#1F1A12] border-amber-500 text-amber-100',
+      };
+      const icons = {
+        success: '✅',
+        error: '⚠️',
+        info: 'ℹ️',
+        warning: '🔔',
+      };
+      el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-2xl text-sm font-medium animate-view ${colors[type] || colors.success}`;
+      el.innerHTML = `<span class="text-base">${icons[type] || '✅'}</span><span class="flex-1 leading-snug">${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-6px)';
+        el.style.transition = 'all 0.2s ease';
+        setTimeout(() => el.remove(), 220);
+      }, 3200);
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 85,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#16A34A', '#22C55E', '#FACC15', '#FFFFFF'],
+        });
+      }
+    }
+
+    function addNotification(userId, title, body, matchId = null) {
+      db.notifications.unshift({
+        id: 'n_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        userId,
+        title,
+        body,
+        matchId,
+        time: 'Agora',
+        read: false,
+      });
+      saveDatabase();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 5. NAVEGAÇÃO E GUARDA DE ALTERAÇÕES NÃO SALVAS
+    // ----------------------------------------------------------------------------
+    function navigateToTab(tab) {
+      if (appState.activeTab === 'create' && appState.createDirty && tab !== 'create') {
+        openConfirmModal({
+          title: 'Descartar partida?',
+          message: 'Você tem alterações não salvas na criação da partida. Deseja realmente sair?',
+          confirmText: 'Sair e descartar',
+          danger: true,
+          onConfirm: () => {
+            appState.createDirty = false;
+            appState.createStep = 1;
+            appState.createForm = getDefaultCreateForm();
+            appState.activeTab = tab;
+            appState.subView = null;
+            renderApp();
+          },
+        });
+        return;
+      }
+
+      if ((tab === 'create' || tab === 'my_matches' || tab === 'profile') && !appState.currentUser) {
+        promptLoginRequired('Faça login para criar partidas, acompanhar seus jogos ou acessar seu perfil.');
+        return;
+      }
+
+      appState.activeTab = tab;
+      appState.subView = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderApp();
+    }
+
+    function openMatchDetail(matchId) {
+      appState.selectedMatchId = matchId;
+      appState.subView = 'match_detail';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderApp();
+    }
+
+    function openMatchChat(matchId) {
+      if (!appState.currentUser) {
+        promptLoginRequired('Entre na sua conta para acessar o chat da partida.');
+        return;
+      }
+      appState.selectedMatchId = matchId;
+      appState.subView = 'match_chat';
+      renderApp();
+    }
+
+    function openCourtOwnerPanel() {
+      if (!appState.currentUser) {
+        promptLoginRequired('Faça login para gerenciar suas quadras.');
+        return;
+      }
+      appState.subView = 'court_owner';
+      const userCourts = db.courts.filter(c => c.ownerId === appState.currentUser.id);
+      appState.ownerSelectedCourtId = userCourts[0]?.id || db.courts[0]?.id || null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderApp();
+    }
+
+    function closeSubView() {
+      appState.subView = null;
+      renderApp();
+    }
+
+    function promptLoginRequired(reason) {
+      openConfirmModal({
+        title: 'Entre no PelApp',
+        message: reason || 'Você está navegando como visitante. Entre ou crie sua conta gratuita para continuar.',
+        confirmText: 'Fazer Login / Cadastro',
+        danger: false,
+        onConfirm: () => {
+          appState.guestMode = false;
+          renderApp();
+        },
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. RENDERIZAÇÃO DO HEADER E BARRA INFERIOR
+    // ----------------------------------------------------------------------------
+    function renderHeader() {
+      const header = document.getElementById('app-header');
+      if (!appState.currentUser && !appState.guestMode) {
+        header.classList.add('hidden');
+        return;
+      }
+      header.classList.remove('hidden');
+
+      const unreadCount = appState.currentUser
+        ? db.notifications.filter(n => n.userId === appState.currentUser.id && !n.read).length
+        : 0;
+
+      header.innerHTML = `
+        <button onclick="navigateToTab('home')" class="flex items-center gap-2 text-left group focus:outline-none">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#16A34A] to-[#15803D] flex items-center justify-center shadow-lg shadow-emerald-950/60 border border-emerald-400/30">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <div class="leading-none">
+            <div class="font-sport italic text-xl font-bold tracking-wider">
+              <span class="text-white">PEL</span><span class="text-[#16A34A]">APP</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-medium tracking-tight block -mt-0.5">O jogo não espera</span>
+          </div>
+        </button>
+
+        <!-- Navegação Horizontal para Notebook/Desktop -->
+        <nav id="desktop-top-nav" class="hidden md:flex items-center gap-1 bg-[#12181F] p-1 rounded-xl border border-white/10">
+          <button onclick="navigateToTab('home')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${(!appState.subView && appState.activeTab === 'home') ? 'bg-[#16A34A] text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}">Início</button>
+          <button onclick="navigateToTab('explore')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${(!appState.subView && appState.activeTab === 'explore') ? 'bg-[#16A34A] text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}">Explorar</button>
+          <button onclick="navigateToTab('create')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${(!appState.subView && appState.activeTab === 'create') ? 'bg-[#16A34A] text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}">+ Criar Partida</button>
+          <button onclick="navigateToTab('my_matches')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${(!appState.subView && appState.activeTab === 'my_matches') ? 'bg-[#16A34A] text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}">Meus Jogos</button>
+          <button onclick="navigateToTab('profile')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${(!appState.subView && appState.activeTab === 'profile') ? 'bg-[#16A34A] text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}">Perfil</button>
+        </nav>
+
+        <div class="flex items-center gap-2">
+          <!-- Pill de Localização -->
+          <button onclick="openLocationModal()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-medium text-slate-200 transition max-w-[145px]">
+            <span class="text-[#16A34A] shrink-0">📍</span>
+            <span class="truncate">${appState.userLocation.city.replace(', MG', '')}</span>
+          </button>
+
+          <!-- Sino de Notificações -->
+          <button onclick="openNotificationsModal()" aria-label="Notificações" class="relative w-9 h-9 rounded-full bg-[#12181F] hover:bg-[#18222C] border border-white/10 flex items-center justify-center text-slate-200 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            ${unreadCount > 0 ? `<span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#0B0F12]">${unreadCount}</span>` : ''}
+          </button>
+
+          <!-- Avatar ou Entrar -->
+          ${appState.currentUser ? `
+            <button onclick="navigateToTab('profile')" class="w-9 h-9 rounded-full overflow-hidden border-2 border-[#16A34A] shrink-0 focus:outline-none">
+              <img src="${appState.currentUser.avatar}" alt="${appState.currentUser.name}" class="w-full h-full object-cover" />
+            </button>
+          ` : `
+            <button onclick="appState.guestMode = false; renderApp();" class="px-3 py-1.5 rounded-full bg-[#16A34A] hover:bg-[#22C55E] text-white text-xs font-bold transition">
+              Entrar
+            </button>
+          `}
+        </div>
+      `;
+    }
+
+    function renderBottomNav() {
+      const nav = document.getElementById('app-bottom-nav');
+      if (!appState.currentUser && !appState.guestMode) {
+        nav.classList.add('hidden');
+        return;
+      }
+      nav.classList.remove('hidden');
+
+      const tab = appState.subView ? '' : appState.activeTab;
+
+      nav.innerHTML = `
+        <button onclick="navigateToTab('home')" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${tab === 'home' ? 'text-[#16A34A]' : 'text-slate-400 hover:text-slate-200'}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <span class="text-[10px] font-semibold mt-0.5">Início</span>
+        </button>
+
+        <button onclick="navigateToTab('explore')" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${tab === 'explore' ? 'text-[#16A34A]' : 'text-slate-400 hover:text-slate-200'}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          <span class="text-[10px] font-semibold mt-0.5">Explorar</span>
+        </button>
+
+        <button onclick="navigateToTab('create')" aria-label="Criar Partida" class="flex flex-col items-center justify-center -mt-5 focus:outline-none group">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-[#15803D] to-[#22C55E] text-white flex items-center justify-center shadow-lg shadow-emerald-950/80 border-4 border-[#080C0E] group-active:scale-95 transition">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+          <span class="text-[10px] font-bold mt-0.5 ${tab === 'create' ? 'text-[#16A34A]' : 'text-slate-300'}">Criar</span>
+        </button>
+
+        <button onclick="navigateToTab('my_matches')" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${tab === 'my_matches' ? 'text-[#16A34A]' : 'text-slate-400 hover:text-slate-200'}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="text-[10px] font-semibold mt-0.5">Meus Jogos</span>
+        </button>
+
+        <button onclick="navigateToTab('profile')" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition ${tab === 'profile' ? 'text-[#16A34A]' : 'text-slate-400 hover:text-slate-200'}">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="text-[10px] font-semibold mt-0.5">Perfil</span>
+        </button>
+      `;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 7. TELA DE LOGIN / CADASTRO (LoginView)
+    // ----------------------------------------------------------------------------
+    let loginState = {
+      mode: 'login', // 'login' | 'register'
+      username: '',
+      password: '',
+      regName: '',
+      regUsername: '',
+      regEmail: '',
+      regPassword: '',
+      regCity: 'Ouro Preto, MG',
+      regAvatar: AVATAR_PRESETS[0],
+      regSports: ['society', 'volei'],
+    };
+
+    function renderLoginView() {
+      const main = document.getElementById('app-main');
+      main.className = 'flex-1 pb-10';
+
+      main.innerHTML = `
+        <div class="min-h-screen flex flex-col justify-center px-5 py-8 bg-gradient-to-b from-[#0B1216] via-[#080C0E] to-[#080C0E] animate-view">
+          <div class="w-full max-w-md mx-auto flex flex-col justify-between">
+          <div>
+            <!-- Branding Hero -->
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#16A34A] to-[#15803D] flex items-center justify-center shadow-xl shadow-emerald-950/70 border border-emerald-400/30">
+                <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <div>
+                <h1 class="font-sport italic text-3xl font-bold tracking-wider leading-none">
+                  <span class="text-white">PEL</span><span class="text-[#16A34A]">APP</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">Comunidade Esportiva • Ouro Preto, MG</p>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <h2 class="font-sport text-2xl text-white leading-tight">ENTRE EM QUADRA COM A GALERA DA REGIÃO</h2>
+              <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                Encontre rachas perto de você, confirme presença em segundos ou reserve as melhores quadras de Ouro Preto.
+              </p>
+            </div>
+
+            <!-- Tabs Entrar / Criar Conta -->
+            <div class="grid grid-cols-2 p-1 rounded-xl bg-[#12181F] border border-white/10 mb-5">
+              <button onclick="loginState.mode = 'login'; renderApp();" class="py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${loginState.mode === 'login' ? 'bg-[#16A34A] text-white shadow' : 'text-slate-400 hover:text-white'}">
+                Entrar
+              </button>
+              <button onclick="loginState.mode = 'register'; renderApp();" class="py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${loginState.mode === 'register' ? 'bg-[#16A34A] text-white shadow' : 'text-slate-400 hover:text-white'}">
+                Criar Conta
+              </button>
+            </div>
+
+            ${loginState.mode === 'login' ? `
+              <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Usuário ou E-mail</label>
+                  <input type="text" required value="${loginState.username}" oninput="loginState.username = this.value" placeholder="ex: dudu" class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A34A]" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Senha</label>
+                  <input type="password" required value="${loginState.password}" oninput="loginState.password = this.value" placeholder="••••" class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#16A34A]" />
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white font-sport text-base tracking-wider shadow-lg shadow-emerald-950/60 transition">
+                  Entrar no PelApp
+                </button>
+              </form>
+
+
+            ` : `
+              <form onsubmit="handleRegisterSubmit(event)" class="space-y-3.5">
+                <!-- Escolha de Avatar -->
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-2">Foto de Perfil</label>
+                  <div class="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                    ${AVATAR_PRESETS.map(url => `
+                      <button type="button" onclick="loginState.regAvatar = '${url}'; renderApp();" class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 transition ${loginState.regAvatar === url ? 'border-[#16A34A] scale-105' : 'border-white/10 opacity-70'}">
+                        <img src="${url}" class="w-full h-full object-cover" />
+                      </button>
+                    `).join('')}
+                    <label class="w-12 h-12 rounded-full bg-[#18222C] border border-dashed border-white/30 flex items-center justify-center text-xs text-slate-300 shrink-0 cursor-pointer hover:border-[#16A34A]" title="Enviar foto">
+                      📷
+                      <input type="file" accept="image/*" class="hidden" onchange="handleAvatarFileUpload(event, 'register')" />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Nome Completo</label>
+                    <input type="text" required value="${loginState.regName}" oninput="loginState.regName = this.value" placeholder="João Silva" class="w-full px-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">@username</label>
+                    <input type="text" required value="${loginState.regUsername}" oninput="loginState.regUsername = this.value" placeholder="joaosilva" class="w-full px-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail</label>
+                    <input type="email" required value="${loginState.regEmail}" oninput="loginState.regEmail = this.value" placeholder="joao@email.com" class="w-full px-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha</label>
+                    <input type="password" required value="${loginState.regPassword}" oninput="loginState.regPassword = this.value" placeholder="Mín. 4 dígitos" class="w-full px-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cidade Base</label>
+                  <select onchange="loginState.regCity = this.value" class="w-full px-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]">
+                    ${MG_CITIES.map(c => `<option value="${c.name}" ${loginState.regCity === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1.5">Esportes Favoritos</label>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${SPORTS_CATALOG.slice(0, 6).map(sp => {
+                      const active = loginState.regSports.includes(sp.id);
+                      return `
+                        <button type="button" onclick="toggleRegSport('${sp.id}')" class="px-2.5 py-1 rounded-full text-[11px] font-medium border transition ${active ? 'bg-[#16A34A]/20 border-[#16A34A] text-[#22C55E]' : 'bg-[#12181F] border-white/10 text-slate-400'}">
+                          ${sp.icon} ${sp.name}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white font-sport text-base tracking-wider shadow-lg transition">
+                  Criar Conta e Entrar
+                </button>
+              </form>
+            `}
+          </div>
+
+          <!-- Modo Visitante -->
+          <div class="mt-6 pt-4 border-t border-white/10 text-center">
+            <button type="button" onclick="enterAsGuest()" class="w-full py-3 rounded-xl bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-semibold text-slate-300 transition">
+              Explorar partidas como Visitante →
+            </button>
+          </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const q = loginState.username.trim().toLowerCase().replace(/^@/, '');
+      const pwd = loginState.password.trim();
+      const user = db.users.find(
+        u => (u.username.toLowerCase() === q || u.email.toLowerCase() === q) && u.password === pwd
+      );
+      if (!user) {
+        showToast('Usuário ou senha inválidos. Tente dudu / 1234.', 'error');
+        return;
+      }
+      appState.currentUser = user;
+      appState.guestMode = false;
+      appState.activeTab = 'home';
+      showToast(`Bem-vindo de volta, ${user.name.split(' ')[0]}! ⚽`);
+      renderApp();
+    }
+
+    function toggleRegSport(sportId) {
+      if (loginState.regSports.includes(sportId)) {
+        loginState.regSports = loginState.regSports.filter(s => s !== sportId);
+      } else {
+        loginState.regSports.push(sportId);
+      }
+      renderApp();
+    }
+
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const cleanUser = loginState.regUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+      if (!cleanUser || loginState.regPassword.length < 4) {
+        showToast('Preencha um @username válido e senha com ao menos 4 caracteres.', 'error');
+        return;
+      }
+      if (db.users.some(u => u.username.toLowerCase() === cleanUser)) {
+        showToast('Este @username já está em uso.', 'error');
+        return;
+      }
+
+      const newUser = {
+        id: 'u_' + Date.now(),
+        username: cleanUser,
+        password: loginState.regPassword,
+        name: loginState.regName.trim(),
+        email: loginState.regEmail.trim(),
+        city: loginState.regCity,
+        avatar: loginState.regAvatar,
+        favoriteSports: loginState.regSports.length ? loginState.regSports : ['society'],
+        paymentMethod: { type: 'PIX', label: loginState.regEmail.trim(), verified: true },
+        isCourtOwner: false,
+      };
+
+      db.users.push(newUser);
+      saveDatabase();
+      appState.currentUser = newUser;
+      appState.guestMode = false;
+      appState.activeTab = 'home';
+      showToast('Conta criada com sucesso! Bem-vindo ao PelApp!');
+      renderApp();
+    }
+
+    function handleAvatarFileUpload(event, target) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const dataUrl = ev.target?.result;
+        if (!dataUrl) return;
+        if (target === 'register') {
+          loginState.regAvatar = dataUrl;
+          renderApp();
+        } else if (target === 'profile' && appState.currentUser) {
+          appState.currentUser.avatar = dataUrl;
+          const idx = db.users.findIndex(u => u.id === appState.currentUser.id);
+          if (idx !== -1) db.users[idx].avatar = dataUrl;
+          saveDatabase();
+          showToast('Foto de perfil atualizada!');
+          renderApp();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function enterAsGuest() {
+      appState.currentUser = null;
+      appState.guestMode = true;
+      appState.activeTab = 'home';
+      showToast('Modo Visitante ativado. Explore partidas e quadras!', 'info');
+      renderApp();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. COMPONENTE REUTILIZÁVEL: MATCH CARD
+    // ----------------------------------------------------------------------------
+    function renderMatchCard(match) {
+      const sport = getSportById(match.sportId);
+      const organizer = getUserById(match.organizerId);
+      const confirmedCount = match.participants.length;
+      const spotsLeft = Math.max(0, match.maxPlayers - confirmedCount);
+      const isFull = spotsLeft === 0;
+      const fillPercent = Math.min(100, Math.round((confirmedCount / match.maxPlayers) * 100));
+      const distText = formatDistance(match.lat, match.lng);
+      const isUserIn = appState.currentUser && match.participants.includes(appState.currentUser.id);
+      const isUserWaitlist = appState.currentUser && match.waitlist.includes(appState.currentUser.id);
+
+      return `
+        <article onclick="openMatchDetail('${match.id}')" class="group rounded-2xl bg-[#12181F] hover:bg-[#151D26] border border-white/10 overflow-hidden shadow-lg transition cursor-pointer">
+          <!-- Banner -->
+          <div class="relative h-36 w-full overflow-hidden">
+            <img src="${sport.image}" alt="${match.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#12181F] via-[#12181F]/35 to-transparent"></div>
+
+            <!-- Badges Top -->
+            <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#080C0E]/85 backdrop-blur-md border border-white/10 text-xs font-bold text-white">
+                <span>${sport.icon}</span>
+                <span>${sport.name}</span>
+              </span>
+
+              ${isFull ? `
+                <span class="px-2.5 py-1 rounded-full bg-amber-500/90 text-[#080C0E] text-[11px] font-extrabold uppercase tracking-wide">
+                  Lotada ${match.waitlistEnabled ? '• Suplentes' : ''}
+                </span>
+              ` : `
+                <span class="px-2.5 py-1 rounded-full bg-[#16A34A] text-white text-[11px] font-bold shadow">
+                  ${spotsLeft} ${spotsLeft === 1 ? 'vaga' : 'vagas'}
+                </span>
+              `}
+            </div>
+
+            <!-- Distância e Data Bottom -->
+            <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-xs">
+              <span class="inline-flex items-center gap-1 text-slate-200 font-semibold bg-[#080C0E]/75 px-2 py-0.5 rounded-md">
+                📍 ${distText}
+              </span>
+              <span class="text-slate-200 font-semibold bg-[#080C0E]/75 px-2 py-0.5 rounded-md">
+                🗓️ ${formatDateBR(match.date)} • ${match.time}
+              </span>
+            </div>
+          </div>
+
+          <!-- Corpo do Card -->
+          <div class="p-3.5">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-sport text-lg text-white leading-snug line-clamp-1">${match.title}</h3>
+              <span class="shrink-0 text-xs font-extrabold px-2 py-0.5 rounded-md ${match.isPaid ? 'bg-emerald-500/15 text-[#22C55E] border border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'}">
+                ${match.isPaid ? `R$ ${match.price}` : 'Gratuito'}
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-1 truncate">🏟️ ${match.locationName}</p>
+
+            <!-- Barra de Progresso de Vagas -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="text-slate-400">Quórum: <strong class="text-slate-200">${confirmedCount}/${match.maxPlayers}</strong> jogadores</span>
+                <span class="text-slate-400">${match.level}</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-[#18222C] overflow-hidden">
+                <div class="h-full rounded-full transition-all ${isFull ? 'bg-amber-500' : 'bg-[#16A34A]'}" style="width: ${fillPercent}%"></div>
+              </div>
+            </div>
+
+            <!-- Footer Card: Organizador + Ação Rápida -->
+            <div class="mt-3.5 pt-3 border-t border-white/10 flex items-center justify-between">
+              <div class="flex items-center gap-2 min-w-0">
+                <img src="${organizer.avatar}" alt="${organizer.name}" class="w-6 h-6 rounded-full object-cover border border-white/20 shrink-0" />
+                <span class="text-[11px] text-slate-400 truncate">Org. <strong class="text-slate-200">${organizer.name.split(' ')[0]}</strong></span>
+              </div>
+
+              ${isUserIn ? `
+                <span class="px-3 py-1.5 rounded-lg bg-[#16A34A]/20 border border-[#16A34A]/40 text-[#22C55E] text-xs font-bold">
+                  Confirmado ✓
+                </span>
+              ` : isUserWaitlist ? `
+                <span class="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
+                  Suplente #${match.waitlist.indexOf(appState.currentUser.id) + 1}
+                </span>
+              ` : `
+                <span class="px-3 py-1.5 rounded-lg bg-[#16A34A] group-hover:bg-[#22C55E] text-white text-xs font-bold transition">
+                  ${isFull ? 'Ver Fila' : 'Participar'}
+                </span>
+              `}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 9. TELA INÍCIO (HomeView)
+    // ----------------------------------------------------------------------------
+    function renderHomeView() {
+      const main = document.getElementById('app-main');
+      const activeMatches = db.matches
+        .filter(m => m.status === 'active')
+        .filter(m => appState.homeSportFilter === 'all' || m.sportId === appState.homeSportFilter)
+        .sort((a, b) => {
+          const distA = calculateHaversineKm(appState.userLocation.lat, appState.userLocation.lng, a.lat, a.lng);
+          const distB = calculateHaversineKm(appState.userLocation.lat, appState.userLocation.lng, b.lat, b.lng);
+          return distA - distB;
+        });
+
+      main.innerHTML = `
+        <div class="px-4 md:px-8 pt-4 md:pt-6 space-y-6 animate-view">
+          <!-- Hero Card -->
+          <section class="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=80" alt="Partidas em Ouro Preto" class="w-full h-48 md:h-60 object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-r from-[#080C0E]/95 via-[#080C0E]/75 to-transparent"></div>
+            <div class="absolute inset-0 p-5 flex flex-col justify-between">
+              <div class="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-[#16A34A]/20 border border-[#16A34A]/40 backdrop-blur-md">
+                <span class="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span>
+                <span class="text-[11px] font-bold text-[#22C55E] uppercase tracking-wider">Comunidade Ativa • ${appState.userLocation.city.split(',')[0]}</span>
+              </div>
+
+              <div>
+                <h1 class="font-sport text-3xl md:text-4xl text-white leading-none max-w-[260px] md:max-w-md">
+                  Seu próximo jogo está perto.
+                </h1>
+                <p class="text-xs md:text-sm text-slate-300 mt-1.5 max-w-[250px] md:max-w-md">
+                  Rachas abertos hoje e quadras disponíveis na região.
+                </p>
+                <button onclick="navigateToTab('explore')" class="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white text-xs font-bold shadow-lg shadow-emerald-950/60 transition">
+                  <span>Encontrar partidas</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Carrossel Rápido de Modalidades -->
+          <section>
+            <div class="flex items-center justify-between mb-2.5">
+              <h2 class="font-sport text-sm text-slate-300 tracking-wider">Modalidades</h2>
+              <button onclick="navigateToTab('explore')" class="text-xs text-[#22C55E] font-semibold">Ver todas</button>
+            </div>
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              <button onclick="appState.homeSportFilter = 'all'; renderApp();" class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${appState.homeSportFilter === 'all' ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300 hover:bg-[#18222C]'}">
+                🔥 Todos
+              </button>
+              ${SPORTS_CATALOG.map(sp => `
+                <button onclick="appState.homeSportFilter = '${sp.id}'; renderApp();" class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${appState.homeSportFilter === sp.id ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300 hover:bg-[#18222C]'}">
+                  ${sp.icon} ${sp.name}
+                </button>
+              `).join('')}
+            </div>
+          </section>
+
+          <!-- Lista "Rolando perto de você" -->
+          <section class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="font-sport text-xl text-white">Rolando perto de você</h2>
+                <p class="text-[11px] text-slate-400">Ordenado por proximidade de ${appState.userLocation.city}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-[#12181F] border border-white/10 text-xs font-bold text-slate-300">
+                ${activeMatches.length} ${activeMatches.length === 1 ? 'jogo' : 'jogos'}
+              </span>
+            </div>
+
+            ${activeMatches.length === 0 ? `
+              <div class="p-8 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+                <div class="text-3xl mb-2">🏟️</div>
+                <p class="text-sm font-semibold text-white">Nenhuma partida desta modalidade no momento</p>
+                <p class="text-xs text-slate-400 mt-1">Que tal organizar a primeira partida agora?</p>
+                <button onclick="navigateToTab('create')" class="mt-4 px-4 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold">
+                  + Criar Partida
+                </button>
+              </div>
+            ` : `
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${activeMatches.map(m => renderMatchCard(m)).join('')}
+              </div>
+            `}
+          </section>
+        </div>
+      `;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 10. TELA EXPLORAR: PARTIDAS E QUADRAS & ARENAS + MAPA LEAFLET (ExploreView)
+    // ----------------------------------------------------------------------------
+    let leafletMapInstance = null;
+    let selectedMapItem = null; // { type: 'match' | 'court', item }
+
+    function getFilteredMatches() {
+      const f = appState.exploreFilters;
+      const q = appState.exploreSearch.trim().toLowerCase();
+      const today = getRelativeDateISO(0);
+      const tomorrow = getRelativeDateISO(1);
+      const weekLimit = getRelativeDateISO(7);
+
+      return db.matches.filter(m => {
+        if (m.status !== 'active') return false;
+        if (q && !m.title.toLowerCase().includes(q) && !m.locationName.toLowerCase().includes(q) && !getSportById(m.sportId).name.toLowerCase().includes(q)) {
+          return false;
+        }
+        if (f.sport !== 'all' && m.sportId !== f.sport) return false;
+        const dist = calculateHaversineKm(appState.userLocation.lat, appState.userLocation.lng, m.lat, m.lng);
+        if (dist > f.maxDistance) return false;
+        if (f.dateFilter === 'today' && m.date !== today) return false;
+        if (f.dateFilter === 'tomorrow' && m.date !== tomorrow) return false;
+        if (f.dateFilter === 'week' && (m.date < today || m.date > weekLimit)) return false;
+        if (f.level !== 'all' && m.level !== f.level) return false;
+        if (f.onlyAvailable && m.participants.length >= m.maxPlayers) return false;
+        if (f.priceFilter === 'free' && m.isPaid) return false;
+        if (f.priceFilter === 'paid' && !m.isPaid) return false;
+        return true;
+      });
+    }
+
+    function getFilteredCourts() {
+      const f = appState.exploreFilters;
+      const q = appState.exploreSearch.trim().toLowerCase();
+
+      return db.courts.filter(c => {
+        if (q && !c.name.toLowerCase().includes(q) && !c.neighborhood.toLowerCase().includes(q) && !c.surface.toLowerCase().includes(q)) {
+          return false;
+        }
+        if (f.sport !== 'all' && !c.sports.includes(f.sport)) return false;
+        const dist = calculateHaversineKm(appState.userLocation.lat, appState.userLocation.lng, c.lat, c.lng);
+        if (dist > f.maxDistance) return false;
+        if (f.surface !== 'all' && !c.surface.toLowerCase().includes(f.surface.toLowerCase())) return false;
+        return true;
+      });
+    }
+
+    function renderExploreView() {
+      const main = document.getElementById('app-main');
+      const filteredMatches = getFilteredMatches();
+      const filteredCourts = getFilteredCourts();
+
+      const activeFilterCount = [
+        appState.exploreFilters.sport !== 'all',
+        appState.exploreFilters.maxDistance < 999,
+        appState.exploreFilters.dateFilter !== 'all',
+        appState.exploreFilters.level !== 'all',
+        appState.exploreFilters.onlyAvailable,
+        appState.exploreFilters.priceFilter !== 'all',
+        appState.exploreFilters.surface !== 'all',
+      ].filter(Boolean).length;
+
+      main.innerHTML = `
+        <div class="px-4 md:px-8 pt-4 md:pt-6 space-y-4 animate-view">
+          <!-- Segmented Control Superior: Partidas vs Quadras & Arenas -->
+          <div class="grid grid-cols-2 p-1 rounded-2xl bg-[#12181F] border border-white/10">
+            <button onclick="appState.exploreTab = 'matches'; selectedMapItem = null; renderApp();" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${appState.exploreTab === 'matches' ? 'bg-[#16A34A] text-white shadow' : 'text-slate-400 hover:text-white'}">
+              <span>⚽</span>
+              <span>Partidas (${filteredMatches.length})</span>
+            </button>
+            <button onclick="appState.exploreTab = 'courts'; selectedMapItem = null; renderApp();" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${appState.exploreTab === 'courts' ? 'bg-[#16A34A] text-white shadow' : 'text-slate-400 hover:text-white'}">
+              <span>🏟️</span>
+              <span>Quadras & Arenas (${filteredCourts.length})</span>
+            </button>
+          </div>
+
+          <!-- Busca + Filtros + Toggle Lista/Mapa -->
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <input type="text" value="${appState.exploreSearch}" oninput="appState.exploreSearch = this.value; renderApp();" placeholder="${appState.exploreTab === 'matches' ? 'Buscar jogo, bairro ou esporte...' : 'Buscar arena, bairro ou piso...'}" class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#16A34A]" />
+            </div>
+
+            <button onclick="openExploreFiltersModal()" class="relative px-3 py-2.5 rounded-xl bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-bold text-slate-200 flex items-center gap-1.5 shrink-0">
+              <span>⚙️</span>
+              <span>Filtros</span>
+              ${activeFilterCount > 0 ? `<span class="w-4 h-4 rounded-full bg-[#16A34A] text-white text-[10px] flex items-center justify-center">${activeFilterCount}</span>` : ''}
+            </button>
+
+            <div class="flex rounded-xl bg-[#12181F] border border-white/10 p-0.5 shrink-0">
+              <button onclick="appState.exploreDisplayMode = 'list'; renderApp();" class="px-2.5 py-2 rounded-lg text-xs font-bold transition ${appState.exploreDisplayMode === 'list' ? 'bg-[#18222C] text-[#22C55E]' : 'text-slate-400'}" title="Lista">
+                ☰
+              </button>
+              <button onclick="appState.exploreDisplayMode = 'map'; renderApp();" class="px-2.5 py-2 rounded-lg text-xs font-bold transition ${appState.exploreDisplayMode === 'map' ? 'bg-[#18222C] text-[#22C55E]' : 'text-slate-400'}" title="Mapa">
+                🗺️
+              </button>
+            </div>
+          </div>
+
+          <!-- Modo Mapa Interativo -->
+          ${appState.exploreDisplayMode === 'map' ? `
+            <div class="relative rounded-2xl overflow-hidden border border-white/10 bg-[#12181F] h-[440px] md:h-[560px]">
+              <div id="explore-leaflet-map" class="w-full h-full"></div>
+
+              <!-- Legenda Superior Mapa -->
+              <div class="absolute top-3 left-3 z-[400] px-3 py-1.5 rounded-full bg-[#080C0E]/90 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-slate-200 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Você
+                <span class="w-2.5 h-2.5 rounded-full bg-[#16A34A] inline-block ml-1"></span> ${appState.exploreTab === 'matches' ? 'Partidas' : 'Quadras'}
+              </div>
+
+              <!-- Card Preview Inferior ao clicar no Pin -->
+              ${selectedMapItem ? renderMapPreviewCard(selectedMapItem) : `
+                <div class="absolute bottom-3 left-3 right-3 z-[400] p-3 rounded-xl bg-[#080C0E]/90 backdrop-blur-md border border-white/10 text-center text-xs text-slate-300">
+                  Toque em um marcador no mapa de <strong>${appState.userLocation.city.split(',')[0]}</strong> para visualizar detalhes.
+                </div>
+              `}
+            </div>
+          ` : `
+            <!-- Modo Lista -->
+            ${appState.exploreTab === 'matches' ? `
+              <div>
+                ${filteredMatches.length === 0 ? `
+                  <div class="p-8 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+                    <div class="text-3xl mb-2">🔎</div>
+                    <p class="text-sm font-bold text-white">Nenhuma partida encontrada</p>
+                    <p class="text-xs text-slate-400 mt-1">Tente limpar os filtros ou ampliar o raio de busca.</p>
+                    <button onclick="resetExploreFilters()" class="mt-3 px-4 py-2 rounded-xl bg-[#18222C] text-xs font-bold text-[#22C55E]">Limpar Filtros</button>
+                  </div>
+                ` : `
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${filteredMatches.map(m => renderMatchCard(m)).join('')}
+                  </div>
+                `}
+              </div>
+            ` : `
+              <div>
+                ${filteredCourts.length === 0 ? `
+                  <div class="p-8 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+                    <div class="text-3xl mb-2">🏟️</div>
+                    <p class="text-sm font-bold text-white">Nenhuma quadra encontrada</p>
+                    <button onclick="resetExploreFilters()" class="mt-3 px-4 py-2 rounded-xl bg-[#18222C] text-xs font-bold text-[#22C55E]">Limpar Filtros</button>
+                  </div>
+                ` : `
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    ${filteredCourts.map(c => renderCourtCard(c)).join('')}
+                  </div>
+                `}
+              </div>
+            `}
+          `}
+        </div>
+      `;
+
+      if (appState.exploreDisplayMode === 'map') {
+        setTimeout(() => initExploreLeafletMap(filteredMatches, filteredCourts), 30);
+      }
+    }
+
+    function renderCourtCard(court) {
+      const selectedDay = appState.courtSelectedDay[court.id] || 'seg';
+      const slots = court.schedule[selectedDay] || [];
+      const distText = formatDistance(court.lat, court.lng);
+
+      return `
+        <article class="rounded-2xl bg-[#12181F] border border-white/10 overflow-hidden shadow-lg">
+          <div class="relative h-40">
+            <img src="${court.image}" alt="${court.name}" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#12181F] via-[#12181F]/30 to-transparent"></div>
+            <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
+              <span class="px-2.5 py-1 rounded-full bg-[#080C0E]/85 backdrop-blur-md border border-white/10 text-[11px] font-bold text-slate-200">
+                ${court.surface}
+              </span>
+              <span class="px-2.5 py-1 rounded-full bg-[#16A34A] text-white text-xs font-extrabold">
+                R$ ${court.pricePerHour}/h
+              </span>
+            </div>
+            <div class="absolute bottom-2.5 left-3.5 right-3.5 flex items-end justify-between">
+              <div>
+                <h3 class="font-sport text-xl text-white leading-tight">${court.name}</h3>
+                <p class="text-xs text-slate-300">📍 ${court.address} • <strong class="text-[#22C55E]">${distText}</strong></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-3.5">
+            <!-- Esportes e Comodidades -->
+            <div class="flex flex-wrap gap-1.5">
+              ${court.sports.map(sid => {
+                const sp = getSportById(sid);
+                return `<span class="px-2 py-0.5 rounded-md bg-[#18222C] text-[11px] font-semibold text-slate-200">${sp.icon} ${sp.name}</span>`;
+              }).join('')}
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 text-[11px] text-slate-400">
+              ${court.amenities.map(a => `<span class="px-2 py-0.5 rounded bg-white/5">✓ ${a}</span>`).join('')}
+            </div>
+
+            <!-- Grade Semanal -->
+            <div class="pt-2 border-t border-white/10">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-300">Grade de Horários</span>
+                <span class="text-[11px] text-slate-400">Selecione o dia</span>
+              </div>
+
+              <div class="grid grid-cols-7 gap-1 mb-3">
+                ${WEEK_DAYS.map(d => `
+                  <button onclick="appState.courtSelectedDay['${court.id}'] = '${d.key}'; renderApp();" class="py-1.5 rounded-lg text-[11px] font-bold transition ${selectedDay === d.key ? 'bg-[#16A34A] text-white' : 'bg-[#18222C] text-slate-400 hover:text-white'}">
+                    ${d.label}
+                  </button>
+                `).join('')}
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                ${slots.map(slot => {
+                  const isAvail = slot.status === 'available';
+                  return `
+                    <div class="p-2.5 rounded-xl border flex items-center justify-between gap-2 ${isAvail ? 'bg-[#18222C]/80 border-white/10' : 'bg-[#0B0F12] border-white/5 opacity-60'}">
+                      <div>
+                        <div class="text-xs font-bold text-white">${slot.time}</div>
+                        <div class="text-[10px] ${isAvail ? 'text-[#22C55E]' : 'text-red-400'}">${isAvail ? `R$ ${slot.price} • Livre` : 'Ocupado'}</div>
+                      </div>
+                      ${isAvail ? `
+                        <button onclick="startCourtBooking('${court.id}', '${selectedDay}', '${slot.id}')" class="px-2.5 py-1.5 rounded-lg bg-[#16A34A] hover:bg-[#22C55E] text-white text-[11px] font-bold transition">
+                          Reservar
+                        </button>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Ações Inferiores da Quadra -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <a href="https://wa.me/${court.whatsapp}?text=${encodeURIComponent(`Olá! Vi a ${court.name} no PelApp e gostaria de consultar horários.`)}" target="_blank" rel="noopener" class="py-2.5 px-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 text-[#22C55E] text-xs font-bold text-center transition">
+                💬 Alugar no WhatsApp
+              </a>
+              <button onclick="organizeMatchAtCourt('${court.id}')" class="py-2.5 px-3 rounded-xl bg-[#18222C] hover:bg-[#202D3A] border border-white/10 text-white text-xs font-bold transition">
+                ⚽ Organizar Partida Aqui
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderMapPreviewCard(selected) {
+      if (selected.type === 'match') {
+        const m = selected.item;
+        const sp = getSportById(m.sportId);
+        return `
+          <div class="absolute bottom-3 left-3 right-3 z-[400] p-3.5 rounded-2xl bg-[#0B0F12]/95 backdrop-blur-md border border-white/15 shadow-2xl">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-bold text-[#22C55E]">${sp.icon} ${sp.name} • ${formatDistance(m.lat, m.lng)}</span>
+                <h4 class="font-sport text-base text-white leading-tight mt-0.5">${m.title}</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">🗓️ ${formatDateBR(m.date)} às ${m.time} • ${m.participants.length}/${m.maxPlayers} vagas</p>
+              </div>
+              <button onclick="openMatchDetail('${m.id}')" class="px-3 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold shrink-0">
+                Abrir →
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        const c = selected.item;
+        return `
+          <div class="absolute bottom-3 left-3 right-3 z-[400] p-3.5 rounded-2xl bg-[#0B0F12]/95 backdrop-blur-md border border-white/15 shadow-2xl">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-bold text-amber-400">🏟️ ${c.surface} • ${formatDistance(c.lat, c.lng)}</span>
+                <h4 class="font-sport text-base text-white leading-tight mt-0.5">${c.name}</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">📍 ${c.neighborhood} • R$ ${c.pricePerHour}/h</p>
+              </div>
+              <button onclick="appState.exploreDisplayMode = 'list'; renderApp();" class="px-3 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold shrink-0">
+                Horários
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function initExploreLeafletMap(matches, courts) {
+      const container = document.getElementById('explore-leaflet-map');
+      if (!container || typeof L === 'undefined') return;
+
+      if (leafletMapInstance) {
+        leafletMapInstance.remove();
+        leafletMapInstance = null;
+      }
+
+      leafletMapInstance = L.map('explore-leaflet-map', {
+        center: [appState.userLocation.lat, appState.userLocation.lng],
+        zoom: 14,
+        zoomControl: true,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(leafletMapInstance);
+
+      // Marcador do Usuário
+      const userIcon = L.divIcon({
+        className: '',
+        html: '<div class="user-pulse-pin"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+      L.marker([appState.userLocation.lat, appState.userLocation.lng], { icon: userIcon }).addTo(leafletMapInstance);
+
+      // Pins de Partidas ou Quadras
+      if (appState.exploreTab === 'matches') {
+        matches.forEach(m => {
+          const sp = getSportById(m.sportId);
+          const pinIcon = L.divIcon({
+            className: '',
+            html: `<div class="pelapp-pin" style="width:36px;height:36px;background:${sp.color};">${sp.icon}</div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+          });
+          const marker = L.marker([m.lat, m.lng], { icon: pinIcon }).addTo(leafletMapInstance);
+          marker.on('click', () => {
+            selectedMapItem = { type: 'match', item: m };
+            renderExploreView();
+          });
+        });
+      } else {
+        courts.forEach(c => {
+          const pinIcon = L.divIcon({
+            className: '',
+            html: `<div class="pelapp-pin" style="width:36px;height:36px;background:#F59E0B;">🏟️</div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+          });
+          const marker = L.marker([c.lat, c.lng], { icon: pinIcon }).addTo(leafletMapInstance);
+          marker.on('click', () => {
+            selectedMapItem = { type: 'court', item: c };
+            renderExploreView();
+          });
+        });
+      }
+    }
+
+    function resetExploreFilters() {
+      appState.exploreSearch = '';
+      appState.exploreFilters = {
+        sport: 'all',
+        maxDistance: 999,
+        dateFilter: 'all',
+        level: 'all',
+        onlyAvailable: false,
+        priceFilter: 'all',
+        surface: 'all',
+        shift: 'all',
+      };
+      renderApp();
+    }
+
+    function organizeMatchAtCourt(courtId) {
+      if (!appState.currentUser) {
+        promptLoginRequired('Entre na sua conta para organizar uma partida nesta quadra.');
+        return;
+      }
+      const court = db.courts.find(c => c.id === courtId);
+      appState.createForm = getDefaultCreateForm();
+      if (court) {
+        appState.createForm.sportId = court.sports[0] || 'society';
+        appState.createForm.courtId = court.id;
+        appState.createForm.locationName = court.name;
+        appState.createForm.address = court.address;
+        appState.createForm.lat = court.lat;
+        appState.createForm.lng = court.lng;
+        appState.createForm.manualLocation = false;
+      }
+      appState.createStep = 1;
+      appState.createDirty = true;
+      appState.activeTab = 'create';
+      appState.subView = null;
+      renderApp();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 11. RESERVA DE QUADRAS & PAGAMENTO PIX / CARTÃO DEMO
+    // ----------------------------------------------------------------------------
+    function startCourtBooking(courtId, dayKey, slotId) {
+      if (!appState.currentUser) {
+        promptLoginRequired('Faça login para reservar um horário na quadra.');
+        return;
+      }
+      const court = db.courts.find(c => c.id === courtId);
+      const slot = court?.schedule[dayKey]?.find(s => s.id === slotId);
+      if (!court || !slot) return;
+
+      openPaymentModal({
+        title: `Reserva • ${court.name}`,
+        subtitle: `Dia: ${WEEK_DAYS.find(d => d.key === dayKey)?.label} • Horário: ${slot.time}`,
+        amount: slot.price,
+        pixCode: `00020126580014BR.GOV.BCB.PIX0136pelapp-quadra-${court.id}@pix.br5204000053039865406${slot.price.toFixed(2)}5802BR5913PELAPP ARENAS6010OURO PRETO62070503***6304A1B2`,
+        onSuccess: (method) => {
+          slot.status = 'occupied';
+          slot.reservedBy = appState.currentUser.name;
+          const receipt = {
+            id: 'REC-' + Math.floor(100000 + Math.random() * 900000),
+            userId: appState.currentUser.id,
+            title: `Reserva de Quadra: ${court.name}`,
+            detail: `${WEEK_DAYS.find(d => d.key === dayKey)?.label} • ${slot.time}`,
+            amount: slot.price,
+            method,
+            date: new Date().toLocaleString('pt-BR'),
+          };
+          db.receipts.unshift(receipt);
+          addNotification(
+            appState.currentUser.id,
+            'Quadra Reservada! 🏟️',
+            `Horário ${slot.time} confirmado em ${court.name}.`,
+            null
+          );
+          saveDatabase();
+          triggerConfetti();
+          renderApp();
+          openReceiptModal(receipt);
+        },
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 12. TELA CRIAR PARTIDA — WIZARD EM 6 ETAPAS (CreateMatchView)
+    // ----------------------------------------------------------------------------
+    function updateCreateField(field, value) {
+      appState.createForm[field] = value;
+      appState.createDirty = true;
+    }
+
+    function renderCreateMatchView() {
+      const main = document.getElementById('app-main');
+      const step = appState.createStep;
+      const f = appState.createForm;
+      const sport = getSportById(f.sportId);
+      const progressPct = Math.round((step / 6) * 100);
+
+      main.innerHTML = `
+        <div class="max-w-2xl mx-auto px-4 md:px-6 pt-4 md:pt-6 pb-8 space-y-5 animate-view">
+          <!-- Cabeçalho & Barra de Progresso -->
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold mb-2">
+              <span class="text-[#22C55E] uppercase tracking-wider">Etapa ${step} de 6</span>
+              <span class="text-slate-400">${progressPct}% concluído</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-[#12181F] overflow-hidden border border-white/5">
+              <div class="h-full bg-gradient-to-r from-[#16A34A] to-[#22C55E] transition-all duration-300" style="width: ${progressPct}%"></div>
+            </div>
+          </div>
+
+          <!-- Etapa 1: Escolher Esporte -->
+          ${step === 1 ? `
+            <div class="space-y-3">
+              <h2 class="font-sport text-2xl text-white">Qual esporte vamos jogar?</h2>
+              <p class="text-xs text-slate-400">A lotação padrão será ajustada automaticamente para a modalidade.</p>
+
+              <div class="grid grid-cols-3 gap-2.5 pt-2">
+                ${SPORTS_CATALOG.map(sp => {
+                  const selected = f.sportId === sp.id;
+                  return `
+                    <button type="button" onclick="selectCreateSport('${sp.id}')" class="p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-1.5 ${selected ? 'bg-[#16A34A]/20 border-[#16A34A] shadow-lg shadow-emerald-950/50' : 'bg-[#12181F] border-white/10 hover:bg-[#18222C]'}">
+                      <span class="text-2xl">${sp.icon}</span>
+                      <span class="text-xs font-bold text-white leading-tight">${sp.name}</span>
+                      <span class="text-[10px] text-slate-400">${sp.defaultPlayers} jog.</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Etapa 2: Nome, Descrição, Nível e Vagas -->
+          ${step === 2 ? `
+            <div class="space-y-4">
+              <h2 class="font-sport text-2xl text-white">Detalhes da Partida</h2>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nome da Partida *</label>
+                <input type="text" value="${f.title}" oninput="updateCreateField('title', this.value)" placeholder="Ex: Racha de ${sport.name} — Ouro Preto" class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-sm text-white focus:outline-none focus:border-[#16A34A]" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Descrição & Recados</label>
+                <textarea rows="3" oninput="updateCreateField('description', this.value)" placeholder="Conte sobre o formato do jogo, divisão de times, etc." class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]">${f.description}</textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nível Esperado</label>
+                <div class="grid grid-cols-2 gap-2">
+                  {['Todos os níveis', 'Iniciante', 'Intermediário', 'Avançado'].map(lvl => \`
+                    <button type="button" onclick="updateCreateField('level', '\${lvl}'); renderApp();" class="py-2.5 px-3 rounded-xl border text-xs font-bold transition \${f.level === lvl ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300'}">
+                      \${lvl}
+                    </button>
+                  \`).join('')}
+                </div>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold text-slate-300">Máximo de Jogadores</span>
+                  <span class="px-2.5 py-1 rounded-lg bg-[#16A34A]/20 text-[#22C55E] font-sport text-lg">${f.maxPlayers} vagas</span>
+                </div>
+                <input type="range" min="2" max="30" value="${f.maxPlayers}" oninput="updateCreateField('maxPlayers', Number(this.value)); renderApp();" class="w-full" />
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                  <span>2 (Simples)</span>
+                  <span>14 (Society)</span>
+                  <span>30 (Evento)</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Etapa 3: Data, Horário e Duração -->
+          ${step === 3 ? `
+            <div class="space-y-4">
+              <h2 class="font-sport text-2xl text-white">Quando vai rolar?</h2>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Data *</label>
+                  <input type="date" value="${f.date}" oninput="updateCreateField('date', this.value)" class="w-full px-3.5 py-3 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Horário de Início *</label>
+                  <input type="time" value="${f.time}" oninput="updateCreateField('time', this.value)" class="w-full px-3.5 py-3 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-2">Duração Estimada</label>
+                <div class="grid grid-cols-3 gap-2.5">
+                  ${[60, 90, 120].map(mins => `
+                    <button type="button" onclick="updateCreateField('duration', ${mins}); renderApp();" class="py-3 rounded-xl border text-xs font-bold transition ${f.duration === mins ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300'}">
+                      ⏱️ ${mins} min
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Etapa 4: Localização (Quadras Oficiais ou Manual) -->
+          ${step === 4 ? `
+            <div class="space-y-4">
+              <h2 class="font-sport text-2xl text-white">Onde será a partida?</h2>
+
+              <div class="grid grid-cols-2 p-1 rounded-xl bg-[#12181F] border border-white/10">
+                <button type="button" onclick="updateCreateField('manualLocation', false); renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${!f.manualLocation ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+                  🏟️ Quadra Oficial PelApp
+                </button>
+                <button type="button" onclick="updateCreateField('manualLocation', true); updateCreateField('courtId', null); renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${f.manualLocation ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+                  📍 Outro Local / Rua
+                </button>
+              </div>
+
+              ${!f.manualLocation ? `
+                <div class="space-y-2.5">
+                  ${db.courts.map(c => {
+                    const selected = f.courtId === c.id;
+                    return `
+                      <button type="button" onclick="selectCreateCourt('${c.id}')" class="w-full p-3.5 rounded-2xl border text-left transition flex items-center justify-between gap-3 ${selected ? 'bg-[#16A34A]/15 border-[#16A34A]' : 'bg-[#12181F] border-white/10 hover:bg-[#18222C]'}">
+                        <div>
+                          <div class="text-sm font-bold text-white">${c.name}</div>
+                          <div class="text-[11px] text-slate-400 mt-0.5">${c.address}</div>
+                          <div class="text-[10px] text-[#22C55E] mt-1">${c.surface} • ${formatDistance(c.lat, c.lng)}</div>
+                        </div>
+                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'border-[#16A34A] bg-[#16A34A]' : 'border-slate-500'}">
+                          ${selected ? '<span class="text-white text-[10px]">✓</span>' : ''}
+                        </div>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              ` : `
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Local / Ginásio *</label>
+                    <input type="text" value="${f.locationName}" oninput="updateCreateField('locationName', this.value)" placeholder="Ex: Quadra Poliesportiva UFOP" class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Endereço / Bairro em Ouro Preto *</label>
+                    <input type="text" value="${f.address}" oninput="updateCreateField('address', this.value)" placeholder="Ex: Bauxita, Ouro Preto, MG" class="w-full px-4 py-3 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+                </div>
+              `}
+            </div>
+          ` : ''}
+
+          <!-- Etapa 5: Pagamento, Suplentes & Regras -->
+          ${step === 5 ? `
+            <div class="space-y-4">
+              <h2 class="font-sport text-2xl text-white">Valores & Regras</h2>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="updateCreateField('isPaid', false); updateCreateField('price', 0); renderApp();" class="py-3 rounded-xl border text-xs font-bold transition ${!f.isPaid ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300'}">
+                  🆓 Partida Gratuita
+                </button>
+                <button type="button" onclick="updateCreateField('isPaid', true); if(!f.price) updateCreateField('price', 15); renderApp();" class="py-3 rounded-xl border text-xs font-bold transition ${f.isPaid ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300'}">
+                  💰 Rateio / Pago
+                </button>
+              </div>
+
+              ${f.isPaid ? `
+                <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Valor por Jogador (R$)</label>
+                    <input type="number" min="1" max="500" value="${f.price}" oninput="updateCreateField('price', Number(this.value))" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-sm font-bold text-white focus:outline-none focus:border-[#16A34A]" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Forma de Cobrança</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button type="button" onclick="updateCreateField('paymentType', 'on_site'); renderApp();" class="p-2.5 rounded-xl border text-left text-xs transition ${f.paymentType === 'on_site' ? 'bg-[#16A34A]/20 border-[#16A34A] text-white font-bold' : 'bg-[#18222C] border-white/10 text-slate-400'}">
+                        🤝 Pagar na Quadra
+                      </button>
+                      <button type="button" onclick="updateCreateField('paymentType', 'advance_pix'); renderApp();" class="p-2.5 rounded-xl border text-left text-xs transition ${f.paymentType === 'advance_pix' ? 'bg-[#16A34A]/20 border-[#16A34A] text-white font-bold' : 'bg-[#18222C] border-white/10 text-slate-400'}">
+                        ⚡ PIX Antecipado
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+
+              <div class="space-y-2.5 p-4 rounded-2xl bg-[#12181F] border border-white/10">
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" ${f.waitlistEnabled ? 'checked' : ''} onchange="updateCreateField('waitlistEnabled', this.checked)" class="mt-1 accent-[#16A34A] w-4 h-4" />
+                  <div>
+                    <div class="text-xs font-bold text-white">Ativar Lista de Suplentes Automática</div>
+                    <div class="text-[11px] text-slate-400">Se alguém desistir, o próximo da fila é promovido com 15 min de reserva garantida.</div>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-3 cursor-pointer pt-2 border-t border-white/5">
+                  <input type="checkbox" ${f.reminder24h ? 'checked' : ''} onchange="updateCreateField('reminder24h', this.checked)" class="mt-1 accent-[#16A34A] w-4 h-4" />
+                  <div>
+                    <div class="text-xs font-bold text-white">Enviar lembrete 24h antes do jogo</div>
+                    <div class="text-[11px] text-slate-400">Notifica todos os confirmados para evitar furos de última hora.</div>
+                  </div>
+                </label>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Regras da Partida</label>
+                <textarea rows="2" oninput="updateCreateField('rules', this.value)" class="w-full px-3.5 py-2.5 rounded-xl bg-[#12181F] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]">${f.rules}</textarea>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Etapa 6: Resumo & Publicar -->
+          ${step === 6 ? `
+            <div class="space-y-4">
+              <h2 class="font-sport text-2xl text-white">Revisar e Publicar</h2>
+
+              <div class="rounded-2xl bg-[#12181F] border border-white/10 overflow-hidden">
+                <div class="h-28 relative">
+                  <img src="${sport.image}" class="w-full h-full object-cover" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-[#12181F] to-transparent"></div>
+                  <span class="absolute bottom-2.5 left-4 px-2.5 py-1 rounded-full bg-[#16A34A] text-white text-xs font-bold">
+                    ${sport.icon} ${sport.name}
+                  </span>
+                </div>
+                <div class="p-4 space-y-2.5 text-xs">
+                  <h3 class="font-sport text-xl text-white">${f.title || `Racha de ${sport.name}`}</h3>
+                  <p class="text-slate-400">${f.description || 'Partida organizada pela comunidade PelApp.'}</p>
+
+                  <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-slate-300">
+                    <div>🗓️ <strong>${formatDateBR(f.date)}</strong> às <strong>${f.time}</strong></div>
+                    <div>⏱️ <strong>${f.duration} minutos</strong></div>
+                    <div>👥 <strong>${f.maxPlayers} vagas</strong> (${f.level})</div>
+                    <div>💰 <strong>${f.isPaid ? `R$ ${f.price} (${f.paymentType === 'advance_pix' ? 'PIX' : 'Na quadra'})` : 'Gratuito'}</strong></div>
+                  </div>
+                  <div class="pt-2 border-t border-white/10 text-slate-300">
+                    📍 <strong>${f.locationName}</strong><br/>
+                    <span class="text-slate-400 text-[11px]">${f.address}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Botões de Navegação do Wizard -->
+          <div class="flex items-center gap-3 pt-2">
+            ${step > 1 ? `
+              <button type="button" onclick="appState.createStep--; renderApp();" class="px-5 py-3.5 rounded-xl bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-bold text-slate-200 transition">
+                ← Voltar
+              </button>
+            ` : ''}
+
+            ${step < 6 ? `
+              <button type="button" onclick="advanceCreateStep()" class="flex-1 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white font-sport text-base tracking-wider shadow-lg transition">
+                Continuar →
+              </button>
+            ` : `
+              <button type="button" onclick="publishNewMatch()" class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-[#16A34A] to-[#22C55E] text-white font-sport text-base tracking-wider shadow-xl shadow-emerald-950/70 transition">
+                🚀 Publicar Partida
+              </button>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectCreateSport(sportId) {
+      const sp = getSportById(sportId);
+      appState.createForm.sportId = sportId;
+      appState.createForm.maxPlayers = sp.defaultPlayers;
+      if (!appState.createForm.title) {
+        appState.createForm.title = `Racha de ${sp.name} — Ouro Preto`;
+      }
+      appState.createDirty = true;
+      renderApp();
+    }
+
+    function selectCreateCourt(courtId) {
+      const court = db.courts.find(c => c.id === courtId);
+      if (!court) return;
+      appState.createForm.courtId = court.id;
+      appState.createForm.locationName = court.name;
+      appState.createForm.address = court.address;
+      appState.createForm.lat = court.lat;
+      appState.createForm.lng = court.lng;
+      appState.createDirty = true;
+      renderApp();
+    }
+
+    function advanceCreateStep() {
+      const step = appState.createStep;
+      const f = appState.createForm;
+      if (step === 2 && !f.title.trim()) {
+        f.title = `Racha de ${getSportById(f.sportId).name} — Ouro Preto`;
+      }
+      if (step === 4 && !f.locationName.trim()) {
+        showToast('Informe o nome do local da partida.', 'error');
+        return;
+      }
+      appState.createStep++;
+      renderApp();
+    }
+
+    function publishNewMatch() {
+      const f = appState.createForm;
+      const sport = getSportById(f.sportId);
+
+      const newMatch = {
+        id: 'm_' + Date.now(),
+        sportId: f.sportId,
+        title: f.title.trim() || `Racha de ${sport.name}`,
+        description: f.description.trim() || 'Partida organizada pela comunidade PelApp em Ouro Preto.',
+        level: f.level,
+        maxPlayers: Number(f.maxPlayers) || sport.defaultPlayers,
+        date: f.date,
+        time: f.time,
+        duration: Number(f.duration) || 90,
+        courtId: f.courtId,
+        locationName: f.locationName.trim(),
+        address: f.address.trim() || 'Ouro Preto, MG',
+        lat: f.lat || appState.userLocation.lat,
+        lng: f.lng || appState.userLocation.lng,
+        isPaid: Boolean(f.isPaid),
+        price: f.isPaid ? Number(f.price) : 0,
+        paymentType: f.paymentType,
+        approvalRequired: false,
+        waitlistEnabled: Boolean(f.waitlistEnabled),
+        reminder24h: Boolean(f.reminder24h),
+        rules: f.rules.trim(),
+        organizerId: appState.currentUser.id,
+        participants: [appState.currentUser.id],
+        waitlist: [],
+        pendingRequests: [],
+        paidUsers: [appState.currentUser.id],
+        status: 'active',
+      };
+
+      db.matches.unshift(newMatch);
+      db.messages[newMatch.id] = [
+        {
+          id: 'msg_' + Date.now(),
+          userId: appState.currentUser.id,
+          text: `Partida criada! Quem animar já confirma presença aqui ⚽🔥`,
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ];
+      addNotification(
+        appState.currentUser.id,
+        'Partida Publicada! 🚀',
+        `"${newMatch.title}" já está visível para atletas da região.`,
+        newMatch.id
+      );
+
+      saveDatabase();
+      appState.createDirty = false;
+      appState.createStep = 1;
+      appState.createForm = getDefaultCreateForm();
+      triggerConfetti();
+      openMatchPublishedSuccessModal(newMatch);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 13. DETALHES DA PARTIDA (MatchDetailView)
+    // ----------------------------------------------------------------------------
+    function renderMatchDetailView() {
+      const main = document.getElementById('app-main');
+      const match = db.matches.find(m => m.id === appState.selectedMatchId);
+      if (!match) {
+        closeSubView();
+        return;
+      }
+
+      const sport = getSportById(match.sportId);
+      const organizer = getUserById(match.organizerId);
+      const userId = appState.currentUser?.id;
+      const isOrganizer = userId && match.organizerId === userId;
+      const isConfirmed = userId && match.participants.includes(userId);
+      const waitlistIdx = userId ? match.waitlist.indexOf(userId) : -1;
+      const isWaitlist = waitlistIdx !== -1;
+      const spotsLeft = Math.max(0, match.maxPlayers - match.participants.length);
+      const isFull = spotsLeft === 0;
+      const distText = formatDistance(match.lat, match.lng);
+      const userReceipt = userId ? db.receipts.find(r => r.userId === userId && r.matchId === match.id) : null;
+
+      main.innerHTML = `
+        <div class="max-w-4xl mx-auto pb-28 md:pb-12 animate-view">
+          <!-- Banner Full-Bleed -->
+          <div class="relative h-56 md:h-72 w-full md:rounded-b-3xl md:overflow-hidden">
+            <img src="${sport.image}" alt="${match.title}" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#080C0E] via-[#080C0E]/45 to-black/40"></div>
+
+            <!-- Botões Topo -->
+            <div class="absolute top-4 left-4 right-4 flex items-center justify-between">
+              <button onclick="closeSubView()" class="w-10 h-10 rounded-full bg-[#080C0E]/80 backdrop-blur-md border border-white/15 flex items-center justify-center text-white">
+                ←
+              </button>
+              <button onclick="shareMatch('${match.id}')" class="px-3.5 py-2 rounded-full bg-[#080C0E]/80 backdrop-blur-md border border-white/15 text-xs font-bold text-white flex items-center gap-1.5">
+                <span>📤</span>
+                <span>Compartilhar</span>
+              </button>
+            </div>
+
+            <!-- Badges e Título Bottom -->
+            <div class="absolute bottom-4 left-4 right-4">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2.5 py-1 rounded-full bg-[#16A34A] text-white text-xs font-bold">
+                  ${sport.icon} ${sport.name}
+                </span>
+                <span class="px-2.5 py-1 rounded-full bg-[#12181F]/90 border border-white/10 text-xs font-bold text-slate-200">
+                  ${isFull ? 'Lotada' : `${spotsLeft} vagas restantes`}
+                </span>
+              </div>
+              <h1 class="font-sport text-2xl text-white leading-tight">${match.title}</h1>
+            </div>
+          </div>
+
+          <div class="px-4 pt-3 space-y-5">
+            <!-- Grid de Informações Principais -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10">
+                <div class="text-[11px] text-slate-400">Data e Horário</div>
+                <div class="text-xs font-bold text-white mt-0.5">🗓️ ${formatDateBR(match.date)} • ${match.time}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10">
+                <div class="text-[11px] text-slate-400">Duração & Nível</div>
+                <div class="text-xs font-bold text-white mt-0.5">⏱️ ${match.duration} min • ${match.level}</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10">
+                <div class="text-[11px] text-slate-400">Distância</div>
+                <div class="text-xs font-bold text-[#22C55E] mt-0.5">📍 ${distText} de você</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10">
+                <div class="text-[11px] text-slate-400">Valor & Pagamento</div>
+                <div class="text-xs font-bold text-white mt-0.5">
+                  ${match.isPaid ? `💰 R$ ${match.price} (${match.paymentType === 'advance_pix' ? 'PIX Antecipado' : 'Na quadra'})` : '🆓 Gratuito'}
+                </div>
+              </div>
+            </div>
+
+            <!-- Localização -->
+            <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-bold text-white">🏟️ ${match.locationName}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${match.address}</div>
+              </div>
+              <a href="https://www.google.com/maps/search/?api=1&query=${match.lat},${match.lng}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-[#18222C] border border-white/10 text-[11px] font-bold text-[#22C55E] shrink-0">
+                Mapa ↗
+              </a>
+            </div>
+
+            <!-- Descrição & Regras -->
+            <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 space-y-2.5">
+              <h3 class="font-sport text-sm text-slate-300">Sobre a Partida</h3>
+              <p class="text-xs text-slate-300 leading-relaxed">${match.description}</p>
+              ${match.rules ? `
+                <div class="pt-2 border-t border-white/10 text-[11px] text-amber-300">
+                  <strong>⚠️ Regras:</strong> ${match.rules}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Comprovante PIX se houver -->
+            ${userReceipt ? `
+              <div class="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-[#22C55E]">✓ Pagamento PIX Confirmado</div>
+                  <div class="text-[11px] text-slate-300">Recibo #${userReceipt.id} • R$ ${userReceipt.amount.toFixed(2)}</div>
+                </div>
+                <button onclick="openReceiptModalById('${userReceipt.id}')" class="px-3 py-1.5 rounded-lg bg-[#16A34A] text-white text-xs font-bold">
+                  Comprovante
+                </button>
+              </div>
+            ` : ''}
+
+            <!-- Card do Organizador -->
+            <div class="p-3.5 rounded-2xl bg-[#12181F] border border-white/10 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img src="${organizer.avatar}" class="w-11 h-11 rounded-full object-cover border-2 border-[#16A34A]" />
+                <div>
+                  <div class="text-[10px] uppercase tracking-wider text-[#22C55E] font-bold">Organizador</div>
+                  <div class="text-sm font-bold text-white">${organizer.name}</div>
+                  <div class="text-[11px] text-slate-400">@${organizer.username} • ${organizer.city}</div>
+                </div>
+              </div>
+              ${isOrganizer ? `<span class="px-2.5 py-1 rounded-lg bg-white/5 text-[11px] text-slate-300 font-semibold">Você</span>` : ''}
+            </div>
+
+            <!-- Lista de Participantes Confirmados -->
+            <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="font-sport text-base text-white">Confirmados (${match.participants.length}/${match.maxPlayers})</h3>
+                <span class="text-xs text-[#22C55E] font-bold">${Math.round((match.participants.length / match.maxPlayers) * 100)}%</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                ${match.participants.map((pid, idx) => {
+                  const p = getUserById(pid);
+                  return `
+                    <div class="flex items-center gap-2 p-2 rounded-xl bg-[#18222C]/70 border border-white/5">
+                      <img src="${p.avatar}" class="w-7 h-7 rounded-full object-cover shrink-0" />
+                      <div class="min-w-0">
+                        <div class="text-xs font-semibold text-white truncate">${p.name.split(' ')[0]} ${p.name.split(' ')[1]?.[0] ? p.name.split(' ')[1][0] + '.' : ''}</div>
+                        <div class="text-[10px] text-slate-400">#${idx + 1} ${pid === match.organizerId ? '• Org' : ''}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+
+              <!-- Explicação Expansível da Lista de Suplentes -->
+              ${match.waitlistEnabled ? `
+                <details class="pt-2 border-t border-white/10 group">
+                  <summary class="list-none flex items-center justify-between cursor-pointer text-xs font-bold text-amber-400">
+                    <span>⏳ Lista de Suplentes (${match.waitlist.length} na fila)</span>
+                    <span class="text-[11px] text-slate-400">Como funciona? ▾</span>
+                  </summary>
+                  <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                    Quando uma partida está lotada, você pode entrar na lista de suplentes. Caso um jogador confirmado cancele sua presença, o primeiro suplente da fila é <strong>promovido automaticamente</strong> com janela de 15 minutos de confirmação garantida!
+                  </p>
+                  ${match.waitlist.length > 0 ? `
+                    <div class="mt-2 space-y-1.5">
+                      ${match.waitlist.map((wid, idx) => {
+                        const wu = getUserById(wid);
+                        return `
+                          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+                            <span class="text-amber-200 font-semibold">#${idx + 1} ${wu.name}</span>
+                            <span class="text-[10px] text-amber-400">Aguardando vaga</span>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  ` : ''}
+                </details>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Rodapé Fixo de Ações Dinâmicas -->
+          <div class="fixed bottom-16 md:bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl z-30 p-3 md:px-6 bg-[#0B0F12]/95 backdrop-blur-lg border-t border-white/10">
+            ${isConfirmed ? `
+              <div class="flex items-center gap-2">
+                <div class="flex-1 py-2.5 px-3 rounded-xl bg-[#16A34A]/20 border border-[#16A34A]/40 text-[#22C55E] text-xs font-bold text-center">
+                  Você está confirmado ✓
+                </div>
+                <button onclick="openMatchChat('${match.id}')" class="px-4 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white text-xs font-bold flex items-center gap-1.5 transition">
+                  <span>💬</span>
+                  <span>Chat</span>
+                </button>
+                ${!isOrganizer ? `
+                  <button onclick="confirmLeaveMatch('${match.id}')" class="px-3 py-2.5 rounded-xl bg-red-950/60 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-xs font-bold transition">
+                    Cancelar
+                  </button>
+                ` : ''}
+              </div>
+            ` : isWaitlist ? `
+              <div class="flex items-center gap-2">
+                <div class="flex-1 py-2.5 px-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold text-center">
+                  ⏳ Você é o Suplente #${waitlistIdx + 1}
+                </div>
+                <button onclick="leaveWaitlist('${match.id}')" class="px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-slate-300 text-xs font-bold">
+                  Sair da fila
+                </button>
+              </div>
+            ` : isFull ? `
+              ${match.waitlistEnabled ? `
+                <button onclick="joinWaitlist('${match.id}')" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#080C0E] font-sport text-base tracking-wider shadow-lg transition">
+                  ⏳ Entrar na lista de suplentes
+                </button>
+              ` : `
+                <button disabled class="w-full py-3.5 rounded-xl bg-[#18222C] text-slate-500 font-sport text-base tracking-wider cursor-not-allowed">
+                  Partida Lotada
+                </button>
+              `}
+            ` : `
+              <button onclick="joinMatch('${match.id}')" class="w-full py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white font-sport text-base tracking-wider shadow-lg shadow-emerald-950/60 transition">
+                ${match.isPaid && match.paymentType === 'advance_pix'
+                  ? `⚡ Pagar R$ ${match.price} e confirmar presença`
+                  : '⚽ Participar da Partida'}
+              </button>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function joinMatch(matchId) {
+      if (!appState.currentUser) {
+        promptLoginRequired('Entre na sua conta para confirmar presença na partida.');
+        return;
+      }
+      const match = db.matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      if (match.participants.includes(appState.currentUser.id)) return;
+      if (match.participants.length >= match.maxPlayers) {
+        showToast('As vagas acabaram de ser preenchidas!', 'warning');
+        renderApp();
+        return;
+      }
+
+      // Fluxo de Pagamento Antecipado PIX obrigatório
+      if (match.isPaid && match.paymentType === 'advance_pix') {
+        openPaymentModal({
+          title: `Cota da Partida • ${match.title}`,
+          subtitle: `${formatDateBR(match.date)} às ${match.time} • ${match.locationName}`,
+          amount: match.price,
+          pixCode: `00020126580014BR.GOV.BCB.PIX0136pelapp-jogo-${match.id}@pix.br5204000053039865405${match.price.toFixed(2)}5802BR5913PELAPP JOGOS6010OURO PRETO62070503***6304F9E1`,
+          onSuccess: (method) => {
+            match.participants.push(appState.currentUser.id);
+            match.paidUsers.push(appState.currentUser.id);
+            const receipt = {
+              id: 'PIX-' + Math.floor(100000 + Math.random() * 900000),
+              userId: appState.currentUser.id,
+              matchId: match.id,
+              title: match.title,
+              detail: `${formatDateBR(match.date)} às ${match.time} • ${match.locationName}`,
+              amount: match.price,
+              method,
+              date: new Date().toLocaleString('pt-BR'),
+            };
+            db.receipts.unshift(receipt);
+            addNotification(
+              appState.currentUser.id,
+              'Presença e PIX Confirmados! ⚡',
+              `Você está dentro de "${match.title}".`,
+              match.id
+            );
+            saveDatabase();
+            triggerConfetti();
+            renderApp();
+            openReceiptModal(receipt);
+          },
+        });
+        return;
+      }
+
+      // Confirmação Direta
+      match.participants.push(appState.currentUser.id);
+      addNotification(
+        appState.currentUser.id,
+        'Presença Confirmada! ⚽',
+        `Você confirmou presença em "${match.title}".`,
+        match.id
+      );
+      saveDatabase();
+      triggerConfetti();
+      showToast('Presença confirmada! Nos vemos em quadra! ⚽');
+      renderApp();
+    }
+
+    function joinWaitlist(matchId) {
+      if (!appState.currentUser) {
+        promptLoginRequired('Entre na sua conta para entrar na lista de suplentes.');
+        return;
+      }
+      const match = db.matches.find(m => m.id === matchId);
+      if (!match) return;
+      if (!match.waitlist.includes(appState.currentUser.id)) {
+        match.waitlist.push(appState.currentUser.id);
+        const pos = match.waitlist.length;
+        addNotification(
+          appState.currentUser.id,
+          `Suplente #${pos} na fila ⏳`,
+          `Você entrou na fila de suplentes de "${match.title}".`,
+          match.id
+        );
+        saveDatabase();
+        showToast(`Você entrou como Suplente #${pos}!`);
+        renderApp();
+      }
+    }
+
+    function leaveWaitlist(matchId) {
+      const match = db.matches.find(m => m.id === matchId);
+      if (!match || !appState.currentUser) return;
+      match.waitlist = match.waitlist.filter(id => id !== appState.currentUser.id);
+      saveDatabase();
+      showToast('Você saiu da lista de suplentes.', 'info');
+      renderApp();
+    }
+
+    function confirmLeaveMatch(matchId) {
+      openConfirmModal({
+        title: 'Cancelar presença?',
+        message: 'Sua vaga será liberada imediatamente e, se houver lista de suplentes, o próximo jogador da fila será promovido.',
+        confirmText: 'Sim, liberar vaga',
+        danger: true,
+        onConfirm: () => {
+          const match = db.matches.find(m => m.id === matchId);
+          if (!match || !appState.currentUser) return;
+          match.participants = match.participants.filter(id => id !== appState.currentUser.id);
+
+          // Promoção automática do próximo suplente
+          if (match.waitlistEnabled && match.waitlist.length > 0) {
+            const promotedUserId = match.waitlist.shift();
+            match.participants.push(promotedUserId);
+            const promotedUser = getUserById(promotedUserId);
+            addNotification(
+              promotedUserId,
+              'Vaga Liberada! Você foi promovido 🎉',
+              `Você saiu da fila de suplentes e entrou em "${match.title}" (15 min de reserva garantida).`,
+              match.id
+            );
+            showToast(`Presença cancelada. Suplente ${promotedUser.name.split(' ')[0]} foi promovido automaticamente!`, 'info');
+          } else {
+            showToast('Presença cancelada com sucesso.', 'info');
+          }
+
+          saveDatabase();
+          renderApp();
+        },
+      });
+    }
+
+    function shareMatch(matchId) {
+      const match = db.matches.find(m => m.id === matchId);
+      if (!match) return;
+      const sport = getSportById(match.sportId);
+      const text = `⚽ Bora jogar no PelApp!\n${sport.icon} ${match.title}\n🗓️ ${formatDateBR(match.date)} às ${match.time}\n📍 ${match.locationName}\nVagas: ${match.participants.length}/${match.maxPlayers}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+      showToast('Convite copiado para a área de transferência! 📋');
+    }
+
+    // ----------------------------------------------------------------------------
+    // 14. CHAT DA PARTIDA (MatchChatView)
+    // ----------------------------------------------------------------------------
+    function renderMatchChatView() {
+      const main = document.getElementById('app-main');
+      const match = db.matches.find(m => m.id === appState.selectedMatchId);
+      if (!match) {
+        closeSubView();
+        return;
+      }
+
+      const sport = getSportById(match.sportId);
+      const chatMsgs = db.messages[match.id] || [];
+
+      main.innerHTML = `
+        <div class="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4.5rem)] md:border-x md:border-white/10 animate-view">
+          <!-- Cabeçalho do Chat -->
+          <div class="px-4 py-3 bg-[#12181F] border-b border-white/10 flex items-center gap-3">
+            <button onclick="openMatchDetail('${match.id}')" class="w-9 h-9 rounded-full bg-[#18222C] flex items-center justify-center text-white">
+              ←
+            </button>
+            <div class="w-10 h-10 rounded-xl bg-[#16A34A]/20 border border-[#16A34A]/40 flex items-center justify-center text-xl">
+              ${sport.icon}
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 class="font-sport text-base text-white truncate">${match.title}</h2>
+              <p class="text-[11px] text-[#22C55E]">${match.participants.length} jogadores confirmados no grupo</p>
+            </div>
+          </div>
+
+          <!-- Lista de Mensagens -->
+          <div id="chat-messages-box" class="flex-1 overflow-y-auto p-4 space-y-3">
+            ${chatMsgs.length === 0 ? `
+              <div class="text-center py-10 text-xs text-slate-400">
+                Nenhuma mensagem ainda. Mande o primeiro recado para a galera!
+              </div>
+            ` : chatMsgs.map(msg => {
+              const sender = getUserById(msg.userId);
+              const isMine = appState.currentUser && msg.userId === appState.currentUser.id;
+              return `
+                <div class="flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}">
+                  ${!isMine ? `<img src="${sender.avatar}" class="w-7 h-7 rounded-full object-cover shrink-0" />` : ''}
+                  <div class="max-w-[76%] px-3.5 py-2.5 rounded-2xl text-xs ${isMine ? 'bg-[#16A34A] text-white rounded-br-sm' : 'bg-[#12181F] border border-white/10 text-slate-100 rounded-bl-sm'}">
+                    ${!isMine ? `<div class="text-[10px] font-bold text-[#22C55E] mb-0.5">${sender.name.split(' ')[0]}</div>` : ''}
+                    <p class="leading-relaxed">${msg.text}</p>
+                    <div class="text-[9px] mt-1 text-right ${isMine ? 'text-emerald-100' : 'text-slate-500'}">${msg.time}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Formulário Fixo de Envio -->
+          <form onsubmit="sendMatchChatMessage(event, '${match.id}')" class="p-3 bg-[#0B0F12] border-t border-white/10 flex items-center gap-2">
+            <input id="chat-input" type="text" required placeholder="Escreva uma mensagem para o time..." class="flex-1 px-4 py-2.5 rounded-full bg-[#12181F] border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#16A34A]" />
+            <button type="submit" class="w-10 h-10 rounded-full bg-[#16A34A] hover:bg-[#22C55E] text-white flex items-center justify-center font-bold shadow transition shrink-0">
+              ➤
+            </button>
+          </form>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const box = document.getElementById('chat-messages-box');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 20);
+    }
+
+    function sendMatchChatMessage(e, matchId) {
+      e.preventDefault();
+      if (!appState.currentUser) return;
+      const input = document.getElementById('chat-input');
+      const text = input?.value.trim();
+      if (!text) return;
+
+      if (!db.messages[matchId]) db.messages[matchId] = [];
+      db.messages[matchId].push({
+        id: 'msg_' + Date.now(),
+        userId: appState.currentUser.id,
+        text,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      });
+      saveDatabase();
+      renderMatchChatView();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 15. MEUS JOGOS (MyMatchesView)
+    // ----------------------------------------------------------------------------
+    function renderMyMatchesView() {
+      const main = document.getElementById('app-main');
+      const uid = appState.currentUser.id;
+      const tab = appState.myMatchesTab;
+
+      const upcoming = db.matches.filter(
+        m => m.status === 'active' && (m.participants.includes(uid) || m.waitlist.includes(uid))
+      );
+      const organized = db.matches.filter(
+        m => m.status === 'active' && m.organizerId === uid
+      );
+      const history = db.matches.filter(
+        m => m.status !== 'active' && (m.participants.includes(uid) || m.organizerId === uid)
+      );
+
+      const list = tab === 'upcoming' ? upcoming : tab === 'organized' ? organized : history;
+
+      main.innerHTML = `
+        <div class="px-4 md:px-8 pt-4 md:pt-6 space-y-4 animate-view">
+          <div>
+            <h1 class="font-sport text-2xl text-white">Meus Jogos</h1>
+            <p class="text-xs text-slate-400">Acompanhe suas partidas confirmadas, organizadas e histórico.</p>
+          </div>
+
+          <!-- Abas -->
+          <div class="grid grid-cols-3 p-1 rounded-xl bg-[#12181F] border border-white/10">
+            <button onclick="appState.myMatchesTab = 'upcoming'; renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${tab === 'upcoming' ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+              Próximas (${upcoming.length})
+            </button>
+            <button onclick="appState.myMatchesTab = 'organized'; renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${tab === 'organized' ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+              Organizadas (${organized.length})
+            </button>
+            <button onclick="appState.myMatchesTab = 'history'; renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${tab === 'history' ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+              Histórico (${history.length})
+            </button>
+          </div>
+
+          <!-- Lista -->
+          <div>
+            ${list.length === 0 ? `
+              <div class="p-8 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+                <div class="text-3xl mb-2">📅</div>
+                <p class="text-sm font-bold text-white">Nenhuma partida nesta aba</p>
+                <p class="text-xs text-slate-400 mt-1">Explore os jogos abertos em Ouro Preto ou crie o seu.</p>
+                <button onclick="navigateToTab('explore')" class="mt-4 px-4 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold">
+                  Explorar Jogos
+                </button>
+              </div>
+            ` : `
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${list.map(m => `
+                  <div class="space-y-2 flex flex-col justify-between">
+                    ${renderMatchCard(m)}
+                    ${tab === 'organized' ? `
+                      <div class="flex justify-end">
+                        <button onclick="cancelOrganizedMatch('${m.id}')" class="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-xs font-bold transition">
+                          🗑️ Cancelar Partida
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function cancelOrganizedMatch(matchId) {
+      openConfirmModal({
+        title: 'Cancelar partida organizada?',
+        message: 'Todos os jogadores confirmados serão notificados do cancelamento.',
+        confirmText: 'Cancelar Partida',
+        danger: true,
+        onConfirm: () => {
+          const match = db.matches.find(m => m.id === matchId);
+          if (!match) return;
+          match.status = 'cancelled';
+          match.participants.forEach(pid => {
+            if (pid !== appState.currentUser.id) {
+              addNotification(pid, 'Partida Cancelada ⚠️', `O organizador cancelou "${match.title}".`, match.id);
+            }
+          });
+          saveDatabase();
+          showToast('Partida cancelada.', 'info');
+          renderApp();
+        },
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 16. PERFIL & PAINEL DO PROPRIETÁRIO DE QUADRAS (ProfileView & CourtOwnerView)
+    // ----------------------------------------------------------------------------
+    function renderProfileView() {
+      const main = document.getElementById('app-main');
+      const user = appState.currentUser;
+
+      const totalGames = db.matches.filter(m => m.participants.includes(user.id)).length;
+      const organizedGames = db.matches.filter(m => m.organizerId === user.id).length;
+      const upcomingGames = db.matches.filter(m => m.status === 'active' && m.participants.includes(user.id)).length;
+
+      main.innerHTML = `
+        <div class="max-w-2xl mx-auto px-4 md:px-6 pt-5 md:pt-8 space-y-5 animate-view">
+          <!-- Card Perfil -->
+          <div class="p-5 rounded-3xl bg-gradient-to-b from-[#151E27] to-[#12181F] border border-white/10 text-center relative">
+            <div class="relative inline-block">
+              <img src="${user.avatar}" alt="${user.name}" class="w-22 h-22 w-[88px] h-[88px] rounded-full object-cover border-3 border-[#16A34A] mx-auto shadow-xl" />
+              <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#16A34A] text-white flex items-center justify-center text-xs cursor-pointer border-2 border-[#12181F] shadow" title="Alterar foto">
+                📷
+                <input type="file" accept="image/*" class="hidden" onchange="handleAvatarFileUpload(event, 'profile')" />
+              </label>
+            </div>
+
+            <h1 class="font-sport text-2xl text-white mt-3">${user.name}</h1>
+            <p class="text-xs text-slate-400">@${user.username} • 📍 ${user.city}</p>
+
+            <!-- Esportes Favoritos -->
+            <div class="flex flex-wrap justify-center gap-1.5 mt-3">
+              ${(user.favoriteSports || []).map(sid => {
+                const sp = getSportById(sid);
+                return `<span class="px-2.5 py-1 rounded-full bg-[#18222C] border border-white/10 text-[11px] font-semibold text-slate-200">${sp.icon} ${sp.name}</span>`;
+              }).join('')}
+            </div>
+
+            <!-- Estatísticas Reais -->
+            <div class="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
+              <div>
+                <div class="font-sport text-2xl text-white">${totalGames}</div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Jogos Totais</div>
+              </div>
+              <div class="border-x border-white/10">
+                <div class="font-sport text-2xl text-[#22C55E]">${organizedGames}</div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Organizados</div>
+              </div>
+              <div>
+                <div class="font-sport text-2xl text-amber-400">${upcomingGames}</div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400">Próximos</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Método de Pagamento Salvo -->
+          <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg">
+                ⚡
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white">Pagamento Rápido PIX</div>
+                <div class="text-[11px] text-slate-400">${user.paymentMethod?.label || user.email}</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-[#16A34A]/20 text-[#22C55E] text-[10px] font-bold">Ativo</span>
+          </div>
+
+          <!-- Área do Proprietário de Quadras -->
+          <button onclick="openCourtOwnerPanel()" class="w-full p-4 rounded-2xl bg-gradient-to-r from-[#18222C] to-[#12181F] hover:border-[#16A34A] border border-white/15 flex items-center justify-between text-left transition">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl">
+                🏟️
+              </div>
+              <div>
+                <div class="font-sport text-base text-white">Área do Proprietário de Quadras</div>
+                <div class="text-[11px] text-slate-400">Gerencie arenas, horários semanais e reservas</div>
+              </div>
+            </div>
+            <span class="text-[#22C55E] font-bold">→</span>
+          </button>
+
+          <!-- Ações de Conta -->
+          <div class="space-y-2.5">
+            <button onclick="openEditProfileModal()" class="w-full py-3 px-4 rounded-xl bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-bold text-white flex items-center justify-between">
+              <span>✏️ Editar Perfil e Esportes</span>
+              <span class="text-slate-500">›</span>
+            </button>
+
+            <button onclick="resetDemoDatabase()" class="w-full py-3 px-4 rounded-xl bg-[#12181F] hover:bg-[#18222C] border border-white/10 text-xs font-bold text-slate-300 flex items-center justify-between">
+              <span>🔄 Restaurar Dados Originais de Demonstração</span>
+              <span class="text-slate-500">›</span>
+            </button>
+
+            <button onclick="logoutUser()" class="w-full py-3 px-4 rounded-xl bg-red-950/40 hover:bg-red-950/70 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-2">
+              <span>🚪 Sair da Conta</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function logoutUser() {
+      appState.currentUser = null;
+      appState.guestMode = false;
+      appState.subView = null;
+      showToast('Você saiu da conta.', 'info');
+      renderApp();
+    }
+
+    function resetDemoDatabase() {
+      openConfirmModal({
+        title: 'Restaurar dados iniciais?',
+        message: 'Isso irá resetar partidas, reservas e mensagens para o estado inicial de demonstração em Ouro Preto.',
+        confirmText: 'Restaurar Agora',
+        danger: true,
+        onConfirm: () => {
+          db = getInitialSeedData();
+          saveDatabase();
+          if (appState.currentUser) {
+            appState.currentUser = db.users.find(u => u.username === appState.currentUser.username) || db.users[0];
+          }
+          showToast('Dados de demonstração restaurados!');
+          renderApp();
+        },
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 17. PAINEL DO PROPRIETÁRIO DE QUADRAS (CourtOwnerView)
+    // ----------------------------------------------------------------------------
+    function renderCourtOwnerView() {
+      const main = document.getElementById('app-main');
+      const allCourts = db.courts;
+      const selectedCourt = allCourts.find(c => c.id === appState.ownerSelectedCourtId) || allCourts[0];
+      const dayKey = appState.ownerSelectedDay || 'seg';
+
+      // KPIs Globais
+      let freeSlots = 0;
+      let occupiedSlots = 0;
+      allCourts.forEach(c => {
+        WEEK_DAYS.forEach(d => {
+          (c.schedule[d.key] || []).forEach(s => {
+            if (s.status === 'available') freeSlots++;
+            else occupiedSlots++;
+          });
+        });
+      });
+
+      main.innerHTML = `
+        <div class="max-w-3xl mx-auto px-4 md:px-6 pt-4 md:pt-6 pb-10 space-y-5 animate-view">
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <button onclick="closeSubView()" class="w-9 h-9 rounded-full bg-[#12181F] border border-white/10 flex items-center justify-center text-white">
+                ←
+              </button>
+              <div>
+                <h1 class="font-sport text-xl text-white">Gestão de Quadras</h1>
+                <p class="text-[11px] text-slate-400">Painel do Proprietário • Ouro Preto, MG</p>
+              </div>
+            </div>
+            <button onclick="openNewCourtModal()" class="px-3 py-2 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white text-xs font-bold">
+              + Nova Quadra
+            </button>
+          </div>
+
+          <!-- KPIs -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+              <div class="font-sport text-2xl text-white">${allCourts.length}</div>
+              <div class="text-[10px] text-slate-400 uppercase">Quadras</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+              <div class="font-sport text-2xl text-[#22C55E]">${freeSlots}</div>
+              <div class="text-[10px] text-slate-400 uppercase">Horários Livres</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-[#12181F] border border-white/10 text-center">
+              <div class="font-sport text-2xl text-amber-400">${occupiedSlots}</div>
+              <div class="text-[10px] text-slate-400 uppercase">Reservados</div>
+            </div>
+          </div>
+
+          <!-- Seletor de Quadra -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">Selecione a Arena / Quadra</label>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              ${allCourts.map(c => `
+                <button onclick="appState.ownerSelectedCourtId = '${c.id}'; renderApp();" class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition ${selectedCourt?.id === c.id ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#12181F] border-white/10 text-slate-300'}">
+                  🏟️ ${c.name}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          ${selectedCourt ? `
+            <div class="p-4 rounded-2xl bg-[#12181F] border border-white/10 space-y-4">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h2 class="font-sport text-lg text-white">${selectedCourt.name}</h2>
+                  <p class="text-[11px] text-slate-400">${selectedCourt.address} • R$ ${selectedCourt.pricePerHour}/h</p>
+                </div>
+                <button onclick="replicateDayToWeek('${selectedCourt.id}', '${dayKey}')" class="px-2.5 py-1.5 rounded-lg bg-[#18222C] hover:bg-[#22303E] border border-white/10 text-[10px] font-bold text-[#22C55E] shrink-0">
+                  📋 Replicar p/ semana
+                </button>
+              </div>
+
+              <!-- Abas Dias da Semana -->
+              <div class="grid grid-cols-7 gap-1">
+                ${WEEK_DAYS.map(d => `
+                  <button onclick="appState.ownerSelectedDay = '${d.key}'; renderApp();" class="py-2 rounded-lg text-xs font-bold transition ${dayKey === d.key ? 'bg-[#16A34A] text-white' : 'bg-[#18222C] text-slate-400'}">
+                    ${d.label}
+                  </button>
+                `).join('')}
+              </div>
+
+              <!-- Lista de Horários com Toggle Instantâneo -->
+              <div class="space-y-2">
+                ${(selectedCourt.schedule[dayKey] || []).map(slot => {
+                  const isAvail = slot.status === 'available';
+                  return `
+                    <div class="p-3 rounded-xl bg-[#18222C] border border-white/10 flex items-center justify-between">
+                      <div>
+                        <div class="text-xs font-bold text-white">⏰ ${slot.time}</div>
+                        <div class="text-[11px] text-slate-400">R$ ${slot.price} ${slot.reservedBy && !isAvail ? `• ${slot.reservedBy}` : ''}</div>
+                      </div>
+                      <button onclick="toggleCourtSlotStatus('${selectedCourt.id}', '${dayKey}', '${slot.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAvail ? 'bg-[#16A34A]/20 border border-[#16A34A] text-[#22C55E]' : 'bg-amber-500/20 border border-amber-500 text-amber-300'}">
+                        ${isAvail ? '✓ Liberado' : '🔒 Reservado'}
+                      </button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+
+              <!-- Adicionar Horário Personalizado -->
+              <form onsubmit="addCustomCourtSlot(event, '${selectedCourt.id}', '${dayKey}')" class="pt-3 border-t border-white/10 flex items-center gap-2">
+                <input id="custom-slot-time" type="text" required placeholder="Ex: 22:00 - 23:30" class="flex-1 px-3 py-2 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                <input id="custom-slot-price" type="number" required value="${selectedCourt.pricePerHour}" class="w-20 px-2.5 py-2 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white focus:outline-none focus:border-[#16A34A]" />
+                <button type="submit" class="px-3 py-2 rounded-xl bg-[#16A34A] text-white text-xs font-bold shrink-0">
+                  + Add
+                </button>
+              </form>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function toggleCourtSlotStatus(courtId, dayKey, slotId) {
+      const court = db.courts.find(c => c.id === courtId);
+      const slot = court?.schedule[dayKey]?.find(s => s.id === slotId);
+      if (!slot) return;
+      slot.status = slot.status === 'available' ? 'occupied' : 'available';
+      slot.reservedBy = slot.status === 'occupied' ? 'Bloqueio Manual' : null;
+      saveDatabase();
+      showToast(`Horário ${slot.time} marcado como ${slot.status === 'available' ? 'Liberado' : 'Reservado'}.`);
+      renderApp();
+    }
+
+    function addCustomCourtSlot(e, courtId, dayKey) {
+      e.preventDefault();
+      const court = db.courts.find(c => c.id === courtId);
+      const timeVal = document.getElementById('custom-slot-time')?.value.trim();
+      const priceVal = Number(document.getElementById('custom-slot-price')?.value) || court.pricePerHour;
+      if (!court || !timeVal) return;
+
+      court.schedule[dayKey].push({
+        id: dayKey + '_' + Date.now(),
+        time: timeVal,
+        price: priceVal,
+        status: 'available',
+        reservedBy: null,
+      });
+      saveDatabase();
+      showToast(`Horário ${timeVal} adicionado!`);
+      renderApp();
+    }
+
+    function replicateDayToWeek(courtId, sourceDayKey) {
+      const court = db.courts.find(c => c.id === courtId);
+      if (!court) return;
+      const template = court.schedule[sourceDayKey] || [];
+      WEEK_DAYS.forEach(d => {
+        if (d.key !== sourceDayKey) {
+          court.schedule[d.key] = template.map((s, idx) => ({
+            ...s,
+            id: `${d.key}_${Date.now()}_${idx}`,
+          }));
+        }
+      });
+      saveDatabase();
+      showToast('Grade replicada para todos os dias da semana! 📋');
+      renderApp();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 18. MODAIS INTERATIVOS (Localização, Notificações, Filtros, PIX, Recibo, etc.)
+    // ----------------------------------------------------------------------------
+    function closeModal() {
+      const root = document.getElementById('modal-root');
+      if (root) root.innerHTML = '';
+    }
+
+    function openConfirmModal({ title, message, confirmText = 'Confirmar', danger = false, onConfirm }) {
+      const root = document.getElementById('modal-root');
+      window.__pendingConfirmAction = () => {
+        closeModal();
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[400px] rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-4">
+            <h3 class="font-sport text-xl text-white">${title}</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">${message}</p>
+            <div class="flex items-center justify-end gap-2.5 pt-2">
+              <button onclick="closeModal()" class="px-4 py-2.5 rounded-xl bg-[#18222C] text-xs font-bold text-slate-300">
+                Voltar
+              </button>
+              <button onclick="window.__pendingConfirmAction()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-white ${danger ? 'bg-red-600 hover:bg-red-500' : 'bg-[#16A34A] hover:bg-[#22C55E]'}">
+                ${confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openLocationModal() {
+      const root = document.getElementById('modal-root');
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[440px] rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-sport text-xl text-white">📍 Sua Localização</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+            </div>
+
+            <button onclick="detectBrowserGPS()" class="w-full py-3 px-4 rounded-xl bg-[#16A34A]/20 hover:bg-[#16A34A]/30 border border-[#16A34A] text-[#22C55E] text-xs font-bold flex items-center justify-center gap-2 transition">
+              <span>🛰️</span>
+              <span>Usar minha localização GPS em tempo real</span>
+            </button>
+
+            <div class="space-y-2">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Cidades de Minas Gerais</p>
+              ${MG_CITIES.map(c => {
+                const active = appState.userLocation.city === c.name;
+                return `
+                  <button onclick="selectCityLocation('${c.name}', ${c.lat}, ${c.lng})" class="w-full p-3 rounded-xl border text-left text-xs font-bold flex items-center justify-between transition ${active ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-200 hover:border-white/25'}">
+                    <span>📍 ${c.name}</span>
+                    ${active ? '<span>✓</span>' : ''}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectCityLocation(name, lat, lng) {
+      appState.userLocation = { city: name, lat, lng, gpsActive: false };
+      closeModal();
+      showToast(`Localização definida para ${name}`);
+      renderApp();
+    }
+
+    function detectBrowserGPS() {
+      if (!navigator.geolocation) {
+        showToast('Geolocalização não suportada neste navegador.', 'error');
+        return;
+      }
+      showToast('Obtendo coordenadas GPS...', 'info');
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          appState.userLocation = {
+            city: 'Ouro Preto, MG (GPS)',
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            gpsActive: true,
+          };
+          closeModal();
+          showToast('Localização GPS atualizada com sucesso! 🛰️');
+          renderApp();
+        },
+        () => {
+          appState.userLocation = {
+            city: 'Ouro Preto, MG',
+            lat: -20.3856,
+            lng: -43.5035,
+            gpsActive: false,
+          };
+          closeModal();
+          showToast('Usando coordenadas padrão de Ouro Preto, MG.', 'info');
+          renderApp();
+        },
+        { timeout: 6000 }
+      );
+    }
+
+    function openNotificationsModal() {
+      if (!appState.currentUser) {
+        promptLoginRequired('Faça login para ver suas notificações.');
+        return;
+      }
+      const userNotifs = db.notifications.filter(n => n.userId === appState.currentUser.id);
+      const root = document.getElementById('modal-root');
+
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[440px] max-h-[82vh] flex flex-col rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 class="font-sport text-xl text-white">🔔 Notificações</h3>
+              <div class="flex items-center gap-2">
+                ${userNotifs.some(n => !n.read) ? `
+                  <button onclick="markAllNotificationsRead()" class="text-[11px] font-bold text-[#22C55E] hover:underline">
+                    Marcar todas lidas
+                  </button>
+                ` : ''}
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto py-3 space-y-2.5">
+              ${userNotifs.length === 0 ? `
+                <div class="text-center py-8 text-xs text-slate-400">Nenhuma notificação por enquanto.</div>
+              ` : userNotifs.map(n => `
+                <div onclick="handleNotificationClick('${n.id}')" class="p-3 rounded-2xl border cursor-pointer transition ${n.read ? 'bg-[#18222C]/50 border-white/5 opacity-75' : 'bg-[#18222C] border-[#16A34A]/50'}">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-white">${n.title}</span>
+                    <span class="text-[10px] text-slate-400 shrink-0">${n.time}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-300 mt-1 leading-snug">${n.body}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function markAllNotificationsRead() {
+      if (!appState.currentUser) return;
+      db.notifications.forEach(n => {
+        if (n.userId === appState.currentUser.id) n.read = true;
+      });
+      saveDatabase();
+      openNotificationsModal();
+      renderHeader();
+    }
+
+    function handleNotificationClick(notifId) {
+      const n = db.notifications.find(item => item.id === notifId);
+      if (!n) return;
+      n.read = true;
+      saveDatabase();
+      closeModal();
+      renderHeader();
+      if (n.matchId) {
+        openMatchDetail(n.matchId);
+      }
+    }
+
+    function openExploreFiltersModal() {
+      const f = appState.exploreFilters;
+      const isMatches = appState.exploreTab === 'matches';
+      const root = document.getElementById('modal-root');
+
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[440px] max-h-[86vh] overflow-y-auto rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-sport text-xl text-white">⚙️ Filtros Avançados</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+            </div>
+
+            <!-- Esporte -->
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1.5">Modalidade</label>
+              <select onchange="appState.exploreFilters.sport = this.value" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white">
+                <option value="all" ${f.sport === 'all' ? 'selected' : ''}>Todas as modalidades</option>
+                ${SPORTS_CATALOG.map(sp => `<option value="${sp.id}" ${f.sport === sp.id ? 'selected' : ''}>${sp.icon} ${sp.name}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Raio de Distância -->
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1.5">Distância Máxima</label>
+              <div class="grid grid-cols-5 gap-1.5">
+                ${[2, 5, 10, 20, 999].map(km => `
+                  <button type="button" onclick="appState.exploreFilters.maxDistance = ${km}; openExploreFiltersModal();" class="py-2 rounded-xl text-[11px] font-bold border ${f.maxDistance === km ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-300'}">
+                    ${km === 999 ? 'Qualquer' : `${km} km`}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            ${isMatches ? `
+              <!-- Data -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1.5">Data</label>
+                <div class="grid grid-cols-4 gap-1.5">
+                  ${[
+                    { k: 'all', l: 'Todas' },
+                    { k: 'today', l: 'Hoje' },
+                    { k: 'tomorrow', l: 'Amanhã' },
+                    { k: 'week', l: '7 dias' },
+                  ].map(item => `
+                    <button type="button" onclick="appState.exploreFilters.dateFilter = '${item.k}'; openExploreFiltersModal();" class="py-2 rounded-xl text-[11px] font-bold border ${f.dateFilter === item.k ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-300'}">
+                      ${item.l}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Preço -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1.5">Custo</label>
+                <div class="grid grid-cols-3 gap-2">
+                  ${[
+                    { k: 'all', l: 'Todos' },
+                    { k: 'free', l: '🆓 Gratuito' },
+                    { k: 'paid', l: '💰 Pago' },
+                  ].map(item => `
+                    <button type="button" onclick="appState.exploreFilters.priceFilter = '${item.k}'; openExploreFiltersModal();" class="py-2 rounded-xl text-[11px] font-bold border ${f.priceFilter === item.k ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-300'}">
+                      ${item.l}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+
+              <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer pt-1">
+                <input type="checkbox" ${f.onlyAvailable ? 'checked' : ''} onchange="appState.exploreFilters.onlyAvailable = this.checked" class="accent-[#16A34A] w-4 h-4" />
+                <span>Mostrar apenas partidas com vagas abertas</span>
+              </label>
+            ` : `
+              <!-- Tipo de Superfície Quadra -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1.5">Tipo de Piso</label>
+                <div class="grid grid-cols-2 gap-2">
+                  ${['all', 'Grama', 'Areia', 'Parquet'].map(surf => `
+                    <button type="button" onclick="appState.exploreFilters.surface = '${surf}'; openExploreFiltersModal();" class="py-2 rounded-xl text-xs font-bold border ${f.surface === surf ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-300'}">
+                      ${surf === 'all' ? 'Todos os pisos' : surf}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            `}
+
+            <div class="grid grid-cols-2 gap-2.5 pt-2">
+              <button onclick="resetExploreFilters(); closeModal();" class="py-3 rounded-xl bg-[#18222C] text-xs font-bold text-slate-300">
+                Limpar Tudo
+              </button>
+              <button onclick="closeModal(); renderApp();" class="py-3 rounded-xl bg-[#16A34A] text-white text-xs font-bold">
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openPaymentModal({ title, subtitle, amount, pixCode, onSuccess }) {
+      const root = document.getElementById('modal-root');
+      let payTab = 'pix';
+
+      window.__confirmDemoPay = (method) => {
+        closeModal();
+        if (typeof onSuccess === 'function') onSuccess(method);
+      };
+
+      const renderPayInner = () => {
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-view">
+            <div class="w-full max-w-[430px] rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-4">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-[#22C55E]">Checkout Demonstrativo PelApp</span>
+                  <h3 class="font-sport text-xl text-white mt-0.5">${title}</h3>
+                  <p class="text-[11px] text-slate-400">${subtitle}</p>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+              </div>
+
+              <div class="p-3.5 rounded-2xl bg-[#18222C] border border-white/10 flex items-center justify-between">
+                <span class="text-xs text-slate-300">Total a pagar</span>
+                <span class="font-sport text-2xl text-[#22C55E]">R$ ${Number(amount).toFixed(2).replace('.', ',')}</span>
+              </div>
+
+              <!-- Tabs PIX vs Cartão -->
+              <div class="grid grid-cols-2 p-1 rounded-xl bg-[#0B0F12] border border-white/10">
+                <button type="button" id="pay-tab-pix" class="py-2 rounded-lg text-xs font-bold ${payTab === 'pix' ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+                  ⚡ PIX Instantâneo
+                </button>
+                <button type="button" id="pay-tab-card" class="py-2 rounded-lg text-xs font-bold ${payTab === 'card' ? 'bg-[#16A34A] text-white' : 'text-slate-400'}">
+                  💳 Cartão (Demo)
+                </button>
+              </div>
+
+              ${payTab === 'pix' ? `
+                <div class="space-y-3 text-center">
+                  <div class="p-4 rounded-2xl bg-white inline-block mx-auto">
+                    <!-- QR Code SVG Estilizado -->
+                    <svg class="w-32 h-32 text-[#080C0E]" viewBox="0 0 100 100" fill="currentColor">
+                      <rect x="10" y="10" width="25" height="25" rx="3"/><rect x="15" y="15" width="15" height="15" fill="white"/><rect x="18" y="18" width="9" height="9"/>
+                      <rect x="65" y="10" width="25" height="25" rx="3"/><rect x="70" y="15" width="15" height="15" fill="white"/><rect x="73" y="18" width="9" height="9"/>
+                      <rect x="10" y="65" width="25" height="25" rx="3"/><rect x="15" y="70" width="15" height="15" fill="white"/><rect x="18" y="73" width="9" height="9"/>
+                      <rect x="42" y="12" width="6" height="6"/><rect x="52" y="18" width="6" height="12"/><rect x="42" y="42" width="16" height="16" rx="2"/>
+                      <rect x="14" y="45" width="12" height="6"/><rect x="68" y="45" width="18" height="6"/><rect x="45" y="68" width="8" height="20"/>
+                      <rect x="65" y="65" width="10" height="10"/><rect x="80" y="75" width="10" height="15"/>
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PIX Copia e Cola</label>
+                    <div class="flex gap-2">
+                      <input type="text" readonly value="${pixCode}" class="flex-1 px-3 py-2 rounded-xl bg-[#0B0F12] border border-white/10 text-[10px] text-slate-300 font-mono" />
+                      <button type="button" onclick="navigator.clipboard?.writeText('${pixCode}'); showToast('Código PIX copiado!');" class="px-3 py-2 rounded-xl bg-[#18222C] text-xs font-bold text-[#22C55E]">
+                        Copiar
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" onclick="window.__confirmDemoPay('PIX')" class="w-full py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#22C55E] text-white font-sport text-base tracking-wider shadow-lg">
+                    ✓ Simular Pagamento PIX Aprovado
+                  </button>
+                </div>
+              ` : `
+                <div class="space-y-3">
+                  <input type="text" value="4532 •••• •••• 8819" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-[#0B0F12] border border-white/10 text-xs text-slate-300" />
+                  <p class="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
+                    ⚠️ No protótipo demonstrativo, pagamentos via cartão simulam recusa da operadora. Utilize o <strong>PIX Instantâneo</strong> para aprovação imediata.
+                  </p>
+                  <button type="button" onclick="showToast('Operadora recusou o cartão demo. Utilize o PIX Instantâneo.', 'error')" class="w-full py-3 rounded-xl bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold">
+                    Testar Cobrança no Cartão
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+
+        document.getElementById('pay-tab-pix')?.addEventListener('click', () => {
+          payTab = 'pix';
+          renderPayInner();
+        });
+        document.getElementById('pay-tab-card')?.addEventListener('click', () => {
+          payTab = 'card';
+          renderPayInner();
+        });
+      };
+
+      renderPayInner();
+    }
+
+    function openReceiptModalById(receiptId) {
+      const r = db.receipts.find(item => item.id === receiptId);
+      if (r) openReceiptModal(r);
+    }
+
+    function openReceiptModal(receipt) {
+      const root = document.getElementById('modal-root');
+      window.__downloadReceiptTxt = () => {
+        const content = [
+          '========================================',
+          '       PELAPP — COMPROVANTE PIX         ',
+          '========================================',
+          `Recibo: ${receipt.id}`,
+          `Data/Hora: ${receipt.date}`,
+          `Descrição: ${receipt.title}`,
+          `Detalhes: ${receipt.detail}`,
+          `Valor Pago: R$ ${Number(receipt.amount).toFixed(2)}`,
+          `Método: ${receipt.method}`,
+          `Status: APROVADO`,
+          '========================================',
+          'Ouro Preto, MG — O jogo não espera.',
+        ].join('\n');
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comprovante_${receipt.id}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Comprovante baixado em .txt!');
+      };
+
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[400px] rounded-3xl bg-[#12181F] border border-emerald-500/40 p-5 shadow-2xl space-y-4 text-center">
+            <div class="w-14 h-14 rounded-full bg-[#16A34A]/20 border border-[#16A34A] text-[#22C55E] flex items-center justify-center text-2xl mx-auto">
+              ✓
+            </div>
+            <div>
+              <h3 class="font-sport text-2xl text-white">Pagamento Confirmado!</h3>
+              <p class="text-xs text-slate-400">Comprovante #${receipt.id}</p>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-[#0B0F12] border border-white/10 text-left space-y-1.5 text-xs">
+              <div class="flex justify-between"><span class="text-slate-400">Item:</span><strong class="text-white text-right">${receipt.title}</strong></div>
+              <div class="flex justify-between"><span class="text-slate-400">Detalhes:</span><span class="text-slate-200 text-right">${receipt.detail}</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Valor:</span><strong class="text-[#22C55E]">R$ ${Number(receipt.amount).toFixed(2).replace('.', ',')}</strong></div>
+              <div class="flex justify-between"><span class="text-slate-400">Data:</span><span class="text-slate-300">${receipt.date}</span></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <button onclick="window.__downloadReceiptTxt()" class="py-3 rounded-xl bg-[#18222C] hover:bg-[#22303E] border border-white/10 text-xs font-bold text-white">
+                ⬇️ Baixar .TXT
+              </button>
+              <button onclick="closeModal()" class="py-3 rounded-xl bg-[#16A34A] text-white text-xs font-bold">
+                Concluir
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openMatchPublishedSuccessModal(match) {
+      const root = document.getElementById('modal-root');
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-view">
+          <div class="w-full max-w-[400px] rounded-3xl bg-[#12181F] border border-[#16A34A]/50 p-6 shadow-2xl space-y-4 text-center">
+            <div class="text-4xl">🏆</div>
+            <h3 class="font-sport text-2xl text-white">Partida Publicada!</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>"${match.title}"</strong> já está aberta para a comunidade de Ouro Preto confirmar presença!
+            </p>
+            <div class="space-y-2 pt-2">
+              <button onclick="shareMatch('${match.id}')" class="w-full py-3 rounded-xl bg-[#18222C] border border-white/10 text-xs font-bold text-[#22C55E]">
+                📤 Copiar Link de Convite
+              </button>
+              <button onclick="closeModal(); openMatchDetail('${match.id}');" class="w-full py-3.5 rounded-xl bg-[#16A34A] text-white font-sport text-base tracking-wider">
+                Ver Página da Partida →
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openEditProfileModal() {
+      const user = appState.currentUser;
+      const root = document.getElementById('modal-root');
+      let editName = user.name;
+      let editCity = user.city;
+      let editSports = [...(user.favoriteSports || [])];
+
+      window.__toggleEditSport = (sid) => {
+        if (editSports.includes(sid)) editSports = editSports.filter(s => s !== sid);
+        else editSports.push(sid);
+        document.querySelectorAll('[data-edit-sport]').forEach(btn => {
+          const id = btn.getAttribute('data-edit-sport');
+          const active = editSports.includes(id);
+          btn.className = `px-2.5 py-1.5 rounded-full text-xs font-semibold border transition ${active ? 'bg-[#16A34A]/20 border-[#16A34A] text-[#22C55E]' : 'bg-[#18222C] border-white/10 text-slate-400'}`;
+        });
+      };
+
+      window.__saveEditedProfile = (e) => {
+        e.preventDefault();
+        user.name = editName.trim() || user.name;
+        user.city = editCity;
+        user.favoriteSports = editSports;
+        const idx = db.users.findIndex(u => u.id === user.id);
+        if (idx !== -1) db.users[idx] = { ...user };
+        saveDatabase();
+        closeModal();
+        showToast('Perfil atualizado com sucesso!');
+        renderApp();
+      };
+
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-view">
+          <form onsubmit="window.__saveEditedProfile(event)" class="w-full max-w-[420px] rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-sport text-xl text-white">✏️ Editar Perfil</h3>
+              <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Nome Completo</label>
+              <input type="text" required value="${editName}" oninput="this.defaultValue = this.value" onchange="this.setAttribute('value', this.value)" id="edit-profile-name" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Cidade</label>
+              <select id="edit-profile-city" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white">
+                ${MG_CITIES.map(c => `<option value="${c.name}" ${editCity === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1.5">Esportes Favoritos</label>
+              <div class="flex flex-wrap gap-1.5">
+                ${SPORTS_CATALOG.map(sp => {
+                  const active = editSports.includes(sp.id);
+                  return `
+                    <button type="button" data-edit-sport="${sp.id}" onclick="window.__toggleEditSport('${sp.id}')" class="px-2.5 py-1.5 rounded-full text-xs font-semibold border transition ${active ? 'bg-[#16A34A]/20 border-[#16A34A] text-[#22C55E]' : 'bg-[#18222C] border-white/10 text-slate-400'}">
+                      ${sp.icon} ${sp.name}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <button type="submit" onclick="editName = document.getElementById('edit-profile-name').value; editCity = document.getElementById('edit-profile-city').value;" class="w-full py-3 rounded-xl bg-[#16A34A] text-white font-sport text-base tracking-wider">
+              Salvar Alterações
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    function openNewCourtModal() {
+      const root = document.getElementById('modal-root');
+      let selectedSports = ['society'];
+
+      window.__toggleNewCourtSport = (sid) => {
+        if (selectedSports.includes(sid)) selectedSports = selectedSports.filter(s => s !== sid);
+        else selectedSports.push(sid);
+        document.querySelectorAll('[data-nc-sport]').forEach(btn => {
+          const id = btn.getAttribute('data-nc-sport');
+          const active = selectedSports.includes(id);
+          btn.className = `px-2.5 py-1 rounded-full text-[11px] font-bold border ${active ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-400'}`;
+        });
+      };
+
+      window.__createCourtSubmit = (e) => {
+        e.preventDefault();
+        const name = document.getElementById('nc-name').value.trim();
+        const neighborhood = document.getElementById('nc-bairro').value.trim() || 'Centro';
+        const address = document.getElementById('nc-address').value.trim();
+        const surface = document.getElementById('nc-surface').value;
+        const price = Number(document.getElementById('nc-price').value) || 100;
+
+        const baseTimes = ['08:00 - 09:30', '17:30 - 19:00', '19:00 - 20:30', '20:30 - 22:00'];
+        const schedule = {};
+        WEEK_DAYS.forEach(d => {
+          schedule[d.key] = baseTimes.map((t, i) => ({
+            id: `${d.key}_${Date.now()}_${i}`,
+            time: t,
+            price,
+            status: 'available',
+            reservedBy: null,
+          }));
+        });
+
+        const newCourt = {
+          id: 'c_' + Date.now(),
+          ownerId: appState.currentUser.id,
+          name,
+          neighborhood,
+          address: `${address} — ${neighborhood}, Ouro Preto, MG`,
+          lat: -20.3865 + (Math.random() - 0.5) * 0.015,
+          lng: -43.5045 + (Math.random() - 0.5) * 0.015,
+          surface,
+          pricePerHour: price,
+          whatsapp: '5531999990000',
+          sports: selectedSports.length ? selectedSports : ['society'],
+          amenities: ['Iluminação LED', 'Vestiário', 'Estacionamento'],
+          image: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=900&q=80',
+          schedule,
+        };
+
+        db.courts.push(newCourt);
+        saveDatabase();
+        appState.ownerSelectedCourtId = newCourt.id;
+        closeModal();
+        showToast('Nova quadra cadastrada com grade semanal! 🏟️');
+        renderApp();
+      };
+
+      root.innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-view">
+          <form onsubmit="window.__createCourtSubmit(event)" class="w-full max-w-[430px] rounded-3xl bg-[#12181F] border border-white/15 p-5 shadow-2xl space-y-3.5">
+            <div class="flex items-center justify-between">
+              <h3 class="font-sport text-xl text-white">🏟️ Cadastrar Nova Quadra</h3>
+              <button type="button" onclick="closeModal()" class="w-8 h-8 rounded-full bg-[#18222C] text-slate-300">✕</button>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">Nome da Arena / Quadra *</label>
+              <input id="nc-name" type="text" required placeholder="Ex: Arena Ouro Preto Sports" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Bairro *</label>
+                <input id="nc-bairro" type="text" required placeholder="Ex: Bauxita" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Valor / Hora (R$) *</label>
+                <input id="nc-price" type="number" required value="110" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">Rua e Número *</label>
+              <input id="nc-address" type="text" required placeholder="Ex: Rua Diogo de Vasconcelos, 150" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white" />
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">Tipo de Piso</label>
+              <select id="nc-surface" class="w-full px-3.5 py-2.5 rounded-xl bg-[#18222C] border border-white/10 text-xs text-white">
+                <option value="Grama Sintética">Grama Sintética</option>
+                <option value="Areia Especial">Areia Especial</option>
+                <option value="Parquet Poliesportivo">Parquet Poliesportivo</option>
+                <option value="Saibro">Saibro</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1.5">Esportes Aceitos</label>
+              <div class="flex flex-wrap gap-1.5">
+                ${SPORTS_CATALOG.slice(0, 6).map(sp => `
+                  <button type="button" data-nc-sport="${sp.id}" onclick="window.__toggleNewCourtSport('${sp.id}')" class="px-2.5 py-1 rounded-full text-[11px] font-bold border ${sp.id === 'society' ? 'bg-[#16A34A] border-[#16A34A] text-white' : 'bg-[#18222C] border-white/10 text-slate-400'}">
+                    ${sp.icon} ${sp.name}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 rounded-xl bg-[#16A34A] text-white font-sport text-base tracking-wider">
+              Salvar Quadra e Gerar Grade
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 19. ORQUESTRADOR PRINCIPAL DE RENDERIZAÇÃO
+    // ----------------------------------------------------------------------------
+    function renderApp() {
+      renderHeader();
+      renderBottomNav();
+
+      const main = document.getElementById('app-main');
+      main.className = 'flex-1 pb-24 md:pb-10';
+
+      if (!appState.currentUser && !appState.guestMode) {
+        renderLoginView();
+        return;
+      }
+
+      if (appState.subView === 'match_detail') {
+        renderMatchDetailView();
+        return;
+      }
+      if (appState.subView === 'match_chat') {
+        renderMatchChatView();
+        return;
+      }
+      if (appState.subView === 'court_owner') {
+        renderCourtOwnerView();
+        return;
+      }
+
+      switch (appState.activeTab) {
+        case 'home':
+          renderHomeView();
+          break;
+        case 'explore':
+          renderExploreView();
+          break;
+        case 'create':
+          renderCreateMatchView();
+          break;
+        case 'my_matches':
+          renderMyMatchesView();
+          break;
+        case 'profile':
+          renderProfileView();
+          break;
+        default:
+          renderHomeView();
+      }
+    }
+
+    // Inicialização ao carregar a janela
+    window.addEventListener('DOMContentLoaded', () => {
+      renderApp();
+    });
+  </script>
+</body>
+</html>
